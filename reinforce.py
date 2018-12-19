@@ -52,10 +52,21 @@ class PolicyGradient:
         with tf.name_scope('train'):
             self.train_op = tf.train.AdamOptimizer(self.lr).minimize(loss)
 
-    def choose_action(self, observation):
+    def choose_action(self, observation, sub, current_node_cpu):
         prob_weights = self.sess.run(self.all_act_prob,
                                      feed_dict={self.tf_obs: observation[np.newaxis, :, :, np.newaxis]})
-        action = np.random.choice(range(prob_weights.shape[1]), p=prob_weights.ravel())
+        arr = prob_weights.ravel().tolist()
+
+        new_actions = []
+        new_probs = []
+        for index in range(prob_weights.shape[1]):
+            if index not in self.ep_as and \
+                    sub.nodes[index]['cpu_remain'] >= current_node_cpu:
+                new_actions.append(index)
+                new_probs.append(arr[index])
+
+        new_softmax = np.exp(new_probs)/np.sum(np.exp(new_probs))
+        action = np.random.choice(new_actions, p=new_softmax)
         return action
 
     def store_transition(self, s, a, r):

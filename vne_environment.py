@@ -3,14 +3,17 @@ from gym import spaces
 import copy
 import networkx as nx
 import numpy as np
-from network import create_sub, calculate_adjacent_bw, create_req
+from utils import calculate_adjacent_bw
 
 
 class MyEnv(gym.Env):
 
     def __init__(self, sub, vnr):
         self.count = -1
-        self.n_action = len(sub)
+        self.n_action = sub.number_of_nodes()
+        # when we reset,we should also reset the sub,that's why I save an original sub
+        self.origin = copy.deepcopy(sub)
+        # this sub is for us to change states when we make a step
         self.sub = copy.deepcopy(sub)
         self.vnr = vnr
         self.action_space = spaces.Discrete(self.n_action)
@@ -20,6 +23,7 @@ class MyEnv(gym.Env):
         for u in range(self.n_action):
             cpu_all.append(sub.nodes[u]['cpu'])
             bw_all.append(calculate_adjacent_bw(sub, u))
+
         # normalization
         self.cpu_all = (cpu_all - np.min(cpu_all)) / (np.max(cpu_all) - np.min(cpu_all))
         self.bw_all = (bw_all - np.min(bw_all)) / (np.max(bw_all) - np.min(bw_all))
@@ -38,14 +42,13 @@ class MyEnv(gym.Env):
 
     def step(self, action):
         self.count = self.count + 1
-
-        self.sub.nodes[action]['cpu_remain'] -= self.vnr.nodes[self.count]['cpu']
         self.cpu_remain, self.bw_all_remain = [], []
         for u in range(self.n_action):
-            self.cpu_remain.append(self.sub.nodes[u]['cpu_remain'])
             adjacent_bw = calculate_adjacent_bw(self.sub, u, 'bw_remain')
             if u == action:
+                self.sub.nodes[action]['cpu_remain'] -= self.vnr.nodes[self.count]['cpu']
                 adjacent_bw -= calculate_adjacent_bw(self.vnr, self.count)
+            self.cpu_remain.append(self.sub.nodes[u]['cpu_remain'])
             self.bw_all_remain.append(adjacent_bw)
 
         self.cpu_remain = (self.cpu_remain - np.min(self.cpu_remain)) / (
@@ -60,12 +63,13 @@ class MyEnv(gym.Env):
                       self.degree,
                       self.closeness,
                       self.betweeness)
+
         reward = self.sub.nodes[action]['cpu_remain'] / self.sub.nodes[action]['cpu']
-        done = bool(self.count == len(self.vnr)-1)
-        return np.vstack(self.state).transpose(), reward, done, {}
+        return np.vstack(self.state).transpose(), reward, False, {}
 
     def reset(self):
         self.count = -1
+        self.sub = copy.deepcopy(self.origin)
         self.cpu_remain = self.cpu_all
         self.bw_all_remain = self.bw_all
         self.state = (self.cpu_all,

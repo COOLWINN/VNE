@@ -1,6 +1,8 @@
 import networkx as nx
-from utils import create_network, calculate_grc
+from utils import create_network
 from vne_environment import MyEnv
+from mcts import MCTS
+from grc import GRC
 
 
 class Substrate:
@@ -39,8 +41,9 @@ class Substrate:
         node_map = {}
 
         if method == 'grc':
-            sub_grc_vector = calculate_grc(self.net)
-            vnr_grc_vector = calculate_grc(vnr, category='vnr')
+            grc = GRC(0.9, 1e-6)
+            sub_grc_vector = grc.calculate_grc(self.net)
+            vnr_grc_vector = grc.calculate_grc(vnr, category='vnr')
             for v_node in vnr_grc_vector:
                 v_id = v_node[0]
                 for s_node in sub_grc_vector:
@@ -48,6 +51,11 @@ class Substrate:
                     if s_id not in node_map.values() and \
                             self.net.nodes[s_id]['cpu_remain'] >= vnr.nodes[v_id]['cpu']:
                         node_map.update({v_id: s_id})
+
+        elif method == "mcts":
+
+            mcts = MCTS(5, 0.5, self, vnr)
+            node_map = mcts.run()
 
         else:
             # initialize the environment
@@ -154,8 +162,8 @@ class Substrate:
                                         self.total_cost,
                                         self.total_revenue / self.total_cost)})
 
-    def output_results(self):
-        filename = 'results/result.txt'
+    def output_results(self, filename):
+        filename = 'results/%s' % filename
         with open(filename, 'w') as f:
             for time, evaluation in self.evaluations.items():
                 f.write("%-10s\t" % time)

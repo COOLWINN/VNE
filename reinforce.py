@@ -4,6 +4,8 @@ import numpy as np
 
 class PolicyGradient:
     def __init__(self,
+                 sub,
+                 vnr,
                  n_actions,
                  n_features,
                  learning_rate=0.01,
@@ -18,6 +20,8 @@ class PolicyGradient:
         self._build_net()
         self.sess = tf.Session()
         self.sess.run(tf.global_variables_initializer())
+        self.sub = sub
+        self.vnr = vnr
 
     def _build_net(self):
         with tf.name_scope('inputs'):
@@ -32,7 +36,7 @@ class PolicyGradient:
                                 strides=(1, self.n_features[1]),
                                 activation=tf.nn.relu)
 
-        conv_flat = tf.reshape(conv, [-1, self.n_actions])
+        conv_flat = tf.reshape(tensor=conv, shape=[-1,self.n_actions])
         all_act = tf.layers.dense(
             inputs=conv_flat,
             units=self.n_actions,
@@ -89,11 +93,33 @@ class PolicyGradient:
 
     # discount episode rewards
     def _discount_and_norm_rewards(self):
+        node_map = {}
+        for i in range(len(self.ep_as)):
+            node_map.update({i: self.ep_as[i]})
+        link_map = self.sub.link_mapping(self.vnr, node_map)
+        if len(link_map) == self.vnr.number_of_edges():
+            requested, occupied = 0, 0
+
+            # node resource
+            for vn_id, sn_id in node_map.items():
+                node_resource = self.vnr.nodes[vn_id]['cpu']
+                occupied += node_resource
+                requested += node_resource
+
+            # link resource
+            for vl, path in link_map.items():
+                link_resource = self.vnr[vl[0]][vl[1]]['bw']
+                requested += link_resource
+                occupied += link_resource * (len(path) - 1)
+            total = occupied-requested
+        else:
+            total = -1000
+
         discounted_ep_rs = np.zeros_like(self.ep_rs)
         running_add = 0
         for t in reversed(range(0, len(self.ep_rs))):
             running_add = running_add * self.gamma + self.ep_rs[t]
-            discounted_ep_rs[t] = running_add
+            discounted_ep_rs[t] = running_add / total
 
         discounted_ep_rs -= np.mean(discounted_ep_rs)
         discounted_ep_rs /= np.std(discounted_ep_rs)

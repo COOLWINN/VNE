@@ -1,10 +1,6 @@
-import numpy as np
 import networkx as nx
 import copy
 import matplotlib.pyplot as plt
-
-damping_factor = 0.9
-sigma = 1e-6
 
 
 def create_network(filename):
@@ -73,45 +69,6 @@ def calculate_adjacent_bw(graph, u, kind='bw'):
     for v in graph.neighbors(u):
         bw_sum += graph[u][v][kind]
     return bw_sum
-
-
-def calculate_grc(graph, category='substrate'):
-    """calculate grc vector of a substrate network or a virtual network"""
-
-    if category == 'vnr':
-        cpu_type = 'cpu'
-        bw_type = 'bw'
-    else:
-        cpu_type = 'cpu_remain'
-        bw_type = 'bw_remain'
-
-    cpu_vector, m_matrix = [], []
-    n = graph.number_of_nodes()
-    for u in range(n):
-        cpu_vector.append(graph.nodes[u][cpu_type])
-        sum_bw = calculate_adjacent_bw(graph, u, bw_type)
-        for v in range(n):
-            if v in graph.neighbors(u):
-                m_matrix.append(graph[u][v][bw_type] / sum_bw)
-            else:
-                m_matrix.append(0)
-    cpu_vector = np.array(cpu_vector) / np.sum(cpu_vector)
-    m_matrix = np.array(m_matrix).reshape(n, n)
-    cpu_vector *= (1 - damping_factor)
-    current_r = cpu_vector
-    delta = float('inf')
-    while delta >= sigma:
-        mr_vector = np.dot(m_matrix, current_r)
-        mr_vector *= damping_factor
-        next_r = cpu_vector + mr_vector
-        delta = np.linalg.norm(next_r - current_r, ord=2)
-        current_r = next_r
-
-    output = []
-    for i in range(n):
-        output.append((i, current_r[i]))
-    output.sort(key=lambda element: element[1], reverse=True)
-    return output
 
 
 def generate_topology_figure(graph, filename):

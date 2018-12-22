@@ -1,27 +1,47 @@
 import tensorflow as tf
 import numpy as np
+from vne_environment import MyEnv
 
 
 class PolicyGradient:
-    def __init__(self,
-                 sub,
-                 vnr,
-                 n_actions,
-                 n_features,
-                 learning_rate=0.01,
-                 reward_decay=0.95,
-                 ):
+    def __init__(self, n_actions, n_features, learning_rate, reward_decay, episodes):
         self.n_actions = n_actions
         self.n_features = n_features
         self.lr = learning_rate
         self.gamma = reward_decay
+        self.episodes = episodes
 
         self.ep_obs, self.ep_as, self.ep_rs = [], [], []
         self._build_net()
         self.sess = tf.Session()
         self.sess.run(tf.global_variables_initializer())
-        self.sub = sub
-        self.vnr = vnr
+
+    def run(self, sub, vnr):
+        node_map = {}
+        # initialize the environment
+        env = MyEnv(sub.net, vnr)
+        for i_episode in range(self.episodes):
+
+            # reset VNE environment
+            observation = env.reset()
+
+            node_map.clear()
+
+            # get a trajectory by sampling from the start-state distribution
+            for count in range(vnr.number_of_nodes()):
+                action = self.choose_action(observation, sub.net, vnr.nodes[count]['cpu'])
+                observation_, reward, done, info = env.step(action)
+                self.store_transition(observation, action, reward)
+                node_map.update({count: action})
+
+                # after each step, we should update the observation
+                observation = observation_
+
+            # when all the virtual nodes have found their host nodes, train our policy network
+            vt = self.learn()
+            print(vt)
+
+        return node_map
 
     def _build_net(self):
         with tf.name_scope('inputs'):
@@ -36,7 +56,8 @@ class PolicyGradient:
                                 strides=(1, self.n_features[1]),
                                 activation=tf.nn.relu)
 
-        conv_flat = tf.reshape(tensor=conv, shape=[-1,self.n_actions])
+        conv_flat = tf.reshape(conv, [-1, self.n_actions])
+
         all_act = tf.layers.dense(
             inputs=conv_flat,
             units=self.n_actions,
@@ -119,7 +140,7 @@ class PolicyGradient:
         running_add = 0
         for t in reversed(range(0, len(self.ep_rs))):
             running_add = running_add * self.gamma + self.ep_rs[t]
-            discounted_ep_rs[t] = running_add / total
+            discounted_ep_rs[t] = running_add
 
         discounted_ep_rs -= np.mean(discounted_ep_rs)
         discounted_ep_rs /= np.std(discounted_ep_rs)

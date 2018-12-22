@@ -1,11 +1,12 @@
 import networkx as nx
 from utils import create_network
-from vne_environment import MyEnv
 from mcts import MCTS
 from grc import GRC
+from reinforce import PolicyGradient
 
 
 class Substrate:
+
     def __init__(self, filename):
         self.net = create_network(filename)
         self.mapped_info = {}
@@ -15,13 +16,13 @@ class Substrate:
         self.total_cost = 0
         self.evaluations = {}
 
-    def mapping_algorithm(self, vnr, method, agent=None):
+    def mapping_algorithm(self, vnr, method):
         """two phrases:node mapping and link mapping"""
 
         self.total_arrived += 1
 
         # mapping virtual nodes
-        node_map = self.node_mapping(vnr, method, agent)
+        node_map = self.node_mapping(vnr, method)
 
         if len(node_map) == vnr.number_of_nodes():
             # mapping virtual links
@@ -33,53 +34,26 @@ class Substrate:
 
         return False
 
-    def node_mapping(self, vnr, method, agent=None):
+    def node_mapping(self, vnr, method):
         """solve the virtual node mapping problem"""
 
         print("node mapping...")
-        # to save virtual-substrate node map
-        node_map = {}
 
         if method == 'grc':
-            grc = GRC(0.9, 1e-6)
-            sub_grc_vector = grc.calculate_grc(self.net)
-            vnr_grc_vector = grc.calculate_grc(vnr, category='vnr')
-            for v_node in vnr_grc_vector:
-                v_id = v_node[0]
-                for s_node in sub_grc_vector:
-                    s_id = s_node[0]
-                    if s_id not in node_map.values() and \
-                            self.net.nodes[s_id]['cpu_remain'] >= vnr.nodes[v_id]['cpu']:
-                        node_map.update({v_id: s_id})
+            grc = GRC(damping_factor=0.9, sigma=1e-6)
+            node_map = grc.run(self, vnr)
 
         elif method == "mcts":
-
-            mcts = MCTS(5, 0.5, self, vnr)
-            node_map = mcts.run()
+            mcts = MCTS(computation_budget=5, exploration_constant=0.5)
+            node_map = mcts.run(self, vnr)
 
         else:
-            # initialize the environment
-            env = MyEnv(self.net, vnr)
-            for i_episode in range(50):
-
-                # reset VNE environment
-                observation = env.reset()
-
-                node_map.clear()
-
-                # get a trajectory by sampling from the start-state distribution
-                for count in range(vnr.number_of_nodes()):
-                    action = agent.choose_action(observation, self.net, vnr.nodes[count]['cpu'])
-                    observation_, reward, done, info = env.step(action)
-                    agent.store_transition(observation, action, reward)
-                    node_map.update({count: action})
-
-                    # after each step, we should update the observation
-                    observation = observation_
-
-                # when all the virtual nodes have found their host nodes, train our policy network
-                vt = agent.learn()
-                print(vt)
+            pg = PolicyGradient(n_actions=100,
+                                n_features=(100, 7),
+                                learning_rate=0.02,
+                                reward_decay=0.95,
+                                episodes=50)
+            node_map = pg.run(self, vnr)
 
         return node_map
 

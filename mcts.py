@@ -162,25 +162,19 @@ class Node:
         child_node.set_parent(self)
         self.children.append(child_node)
 
-    def __repr__(self):
-        return "Node: {}, Q/N: {}/{}, state: {}".format(
-            hash(self), self.value, self.visit_times, self.state)
-
 
 class MCTS:
-    def __init__(self, computation_budget, exploration_constant, sub, vnr):
+    def __init__(self, computation_budget, exploration_constant):
         self.computation_budget = computation_budget
         self.exploration_constant = exploration_constant
-        self.sub = sub
-        self.vnr = vnr
 
-    def run(self):
+    def run(self, sub, vnr):
         node_map = {}
         current_node = Node()
-        init_state = State(self.sub, self.vnr)
+        init_state = State(sub, vnr)
         current_node.set_state(init_state)
 
-        for vn_id in range(self.vnr.number_of_nodes()):
+        for vn_id in range(vnr.number_of_nodes()):
             current_node = self.search(current_node)
             sn_id = current_node.get_state().get_sn_id()
             if sn_id == -1:

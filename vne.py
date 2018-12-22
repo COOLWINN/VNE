@@ -1,6 +1,5 @@
 from substrate import Substrate
-from utils import create_requests, generate_topology_figure
-# from reinforce import PolicyGradient
+from utils import create_requests
 
 
 def main():
@@ -21,9 +20,7 @@ def main():
         if req.graph['type'] == 0:
             """a request which is newly arrived"""
 
-            print("Try to map request%s" % req_id)
-
-            # agent = PolicyGradient(100, sub, req, n_features=(100, 7), learning_rate=0.02, reward_decay=0.95)
+            print("Try to map request%s: " % req_id)
 
             if sub.mapping_algorithm(req, algorithm):
                 print("Success!")
@@ -32,9 +29,11 @@ def main():
 
         if req.graph['type'] == 1:
             """a request which is ready to leave"""
+
+            print("Release the resources which are occupied by request%s" % req_id)
+
             if req_id in sub.mapped_info.keys():
                 sub.change_resource(req, 'release')
-                print("End up the service of vnr%s and the occupied resource has benn released..." % req_id)
 
     # Step4: output results
     sub.output_results('result-%s.txt' % algorithm)

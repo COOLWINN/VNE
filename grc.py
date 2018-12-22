@@ -7,6 +7,19 @@ class GRC:
         self.damping_factor = damping_factor
         self.sigma = sigma
 
+    def run(self, sub, vnr):
+        node_map = {}
+        sub_grc_vector = self.calculate_grc(sub.net)
+        vnr_grc_vector = self.calculate_grc(vnr, category='vnr')
+        for v_node in vnr_grc_vector:
+            v_id = v_node[0]
+            for s_node in sub_grc_vector:
+                s_id = s_node[0]
+                if s_id not in node_map.values() and \
+                        sub.net.nodes[s_id]['cpu_remain'] >= vnr.nodes[v_id]['cpu']:
+                    node_map.update({v_id: s_id})
+        return node_map
+
     def calculate_grc(self, graph, category='substrate'):
         """calculate grc vector of a substrate network or a virtual network"""
 

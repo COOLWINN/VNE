@@ -6,7 +6,7 @@ def main():
     # Step1: create the substrate network and VNRs.
     directory = 'network_files/'
     sub = Substrate(directory + 'sub.txt')
-    reqs = create_requests(directory)
+    reqs = create_requests(directory + 'requests/')
 
     # Step2: choose an algorithm to run
     algorithm = input("Please select an algorithm('grc','mcts','pg'): ")

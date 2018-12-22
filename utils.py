@@ -57,7 +57,7 @@ def create_requests(path):
         queue.append(vnr_arrive)
         queue.append(vnr_leave)
 
-    # sort the network_files by their time(arrive time or depart time)
+    # sort the temp_files by their time(arrive time or depart time)
     queue.sort(key=lambda r: r.graph['time'])
     return queue
 

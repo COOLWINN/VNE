@@ -1,6 +1,6 @@
 import tensorflow as tf
 import numpy as np
-from vne_environment import MyEnv
+from environment1 import MyEnv
 
 
 class PolicyGradient:
@@ -58,20 +58,26 @@ class PolicyGradient:
 
         conv_flat = tf.reshape(conv, [-1, self.n_actions])
 
-        all_act = tf.layers.dense(
-            inputs=conv_flat,
-            units=self.n_actions,
-            activation=None,
-            kernel_initializer=tf.random_normal_initializer(mean=0, stddev=0.3),
-            bias_initializer=tf.constant_initializer(0.1)
-        )
+        # all_act = tf.layers.dense(
+        #     inputs=conv_flat,
+        #     units=self.n_actions,
+        #     activation=None,
+        #     kernel_initializer=tf.random_normal_initializer(mean=0, stddev=0.3),
+        #     bias_initializer=tf.constant_initializer(0.1)
+        # )
+        #
+        # self.all_act_prob = tf.nn.softmax(all_act, name='act_prob')
 
-        self.all_act_prob = tf.nn.softmax(all_act, name='act_prob')
-
-        # loss function
+        self.all_act_prob = tf.nn.softmax(conv_flat,name='act_prob')
         with tf.name_scope('loss'):
-            neg_log_prob = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=all_act, labels=self.tf_acts)
+            neg_log_prob = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=conv_flat, labels=self.tf_acts)
             loss = tf.reduce_mean(neg_log_prob * self.tf_vt)
+
+
+        # # loss function
+        # with tf.name_scope('loss'):
+        #     neg_log_prob = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=all_act, labels=self.tf_acts)
+        #     loss = tf.reduce_mean(neg_log_prob * self.tf_vt)
 
         # Optimizer
         with tf.name_scope('train'):
@@ -115,26 +121,26 @@ class PolicyGradient:
     # discount episode rewards
     def _discount_and_norm_rewards(self):
         node_map = {}
-        for i in range(len(self.ep_as)):
-            node_map.update({i: self.ep_as[i]})
-        link_map = self.sub.link_mapping(self.vnr, node_map)
-        if len(link_map) == self.vnr.number_of_edges():
-            requested, occupied = 0, 0
-
-            # node resource
-            for vn_id, sn_id in node_map.items():
-                node_resource = self.vnr.nodes[vn_id]['cpu']
-                occupied += node_resource
-                requested += node_resource
-
-            # link resource
-            for vl, path in link_map.items():
-                link_resource = self.vnr[vl[0]][vl[1]]['bw']
-                requested += link_resource
-                occupied += link_resource * (len(path) - 1)
-            total = occupied-requested
-        else:
-            total = -1000
+        # for i in range(len(self.ep_as)):
+        #     node_map.update({i: self.ep_as[i]})
+        # link_map = self.sub.link_mapping(self.vnr, node_map)
+        # if len(link_map) == self.vnr.number_of_edges():
+        #     requested, occupied = 0, 0
+        #
+        #     # node resource
+        #     for vn_id, sn_id in node_map.items():
+        #         node_resource = self.vnr.nodes[vn_id]['cpu']
+        #         occupied += node_resource
+        #         requested += node_resource
+        #
+        #     # link resource
+        #     for vl, path in link_map.items():
+        #         link_resource = self.vnr[vl[0]][vl[1]]['bw']
+        #         requested += link_resource
+        #         occupied += link_resource * (len(path) - 1)
+        #     total = occupied-requested
+        # else:
+        #     total = -1000
 
         discounted_ep_rs = np.zeros_like(self.ep_rs)
         running_add = 0

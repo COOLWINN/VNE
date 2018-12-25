@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 
 
 def create_network(filename):
-    """create a new virtual network request"""
+    """读取网络拓扑文件并生成一个networkx.Graph实例"""
 
     node_id, link_id = 0, 0
 
@@ -44,7 +44,7 @@ def create_network(filename):
 
 
 def create_requests(path):
-    """create a set of requests,including new ones which just arrived and old ones which are about to leave"""
+    """创建虚拟网络请求事件队列"""
 
     queue = []
     for i in range(2000):
@@ -57,13 +57,25 @@ def create_requests(path):
         queue.append(vnr_arrive)
         queue.append(vnr_leave)
 
-    # sort the temp_files by their time(arrive time or depart time)
+    # sort the data by their time(arrive time or depart time)
     queue.sort(key=lambda r: r.graph['time'])
     return queue
 
 
+def create_training_set(path):
+    """创建虚拟网络请求事件队列"""
+
+    queue = []
+    for i in range(2000):
+        filename = '%sreq%s.txt' % (path, i)
+        vnr_arrive = create_network(filename)
+        vnr_arrive.graph['id'] = i
+        queue.append(vnr_arrive)
+    return queue
+
+
 def calculate_adjacent_bw(graph, u, kind='bw'):
-    """calculate the bandwidth sum of the node u's adjacent links"""
+    """计算一个节点的相邻链路带宽和，默认为总带宽和，若计算剩余带宽资源和，需指定kind属性为bw-remain"""
 
     bw_sum = 0
     for v in graph.neighbors(u):
@@ -72,10 +84,28 @@ def calculate_adjacent_bw(graph, u, kind='bw'):
 
 
 def generate_topology_figure(graph, filename):
-    """save the topology figure of a network"""
+    """绘制拓扑图并保存"""
 
     save_path = 'results/'
     nx.draw(graph, with_labels=False, node_color='black', edge_color='gray', node_size=50)
     # plt.show()
     plt.savefig(save_path + filename + '.png')
     plt.close()
+
+
+def read_result(filename):
+    """读取结果文件"""
+
+    with open(filename) as f:
+        lines = f.readlines()
+
+    time, acc, revenue, cost, rc = [], [], [], [], []
+    for line in lines:
+        a, b, c, d, e = [float(x) for x in line.split()]
+        time.append(a)
+        acc.append(b/a)
+        revenue.append(c/a)
+        cost.append(d)
+        rc.append(e)
+
+    return time, acc, revenue, cost, rc

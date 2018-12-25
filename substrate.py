@@ -1,14 +1,16 @@
 import networkx as nx
-from utils import create_network
+from utils import create_network, create_training_set
 from mcts import MCTS
 from grc import GRC
 from reinforce import PolicyGradient
+from reinforce2 import RL
 
 
 class Substrate:
 
     def __init__(self, filename):
         self.net = create_network(filename)
+        self.agent = None
         self.mapped_info = {}
         self.total_arrived = 0
         self.total_accepted = 0
@@ -26,6 +28,7 @@ class Substrate:
 
         if len(node_map) == vnr.number_of_nodes():
             # mapping virtual links
+            print("link mapping...")
             link_map = self.link_mapping(vnr, node_map)
             if len(link_map) == vnr.number_of_edges():
                 self.mapped_info.update({vnr.graph['id']: (node_map, link_map)})
@@ -47,6 +50,17 @@ class Substrate:
             mcts = MCTS(computation_budget=5, exploration_constant=0.5)
             node_map = mcts.run(self, vnr)
 
+        elif method == "rl":
+            if self.agent is None:
+                agent = RL(n_actions=self.net.number_of_nodes(),
+                           n_features=(self.net.number_of_nodes(), 4),
+                           learning_rate=0.05,
+                           num_epoch=100,
+                           batch_size=100)
+                training_set = create_training_set('data/training')
+                agent.train(self, training_set)
+            node_map = self.agent.test(self, vnr)
+
         else:
             pg = PolicyGradient(n_actions=100,
                                 n_features=(100, 7),
@@ -60,7 +74,6 @@ class Substrate:
     def link_mapping(self, vnr, node_map):
         """solve the virtual link mapping problem"""
 
-        print("link mapping...")
         link_map = {}
         for vLink in vnr.edges:
             vn_from = vLink[0]

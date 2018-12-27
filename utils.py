@@ -66,11 +66,18 @@ def create_training_set(path):
     """创建虚拟网络请求事件队列"""
 
     queue = []
-    for i in range(2000):
+    for i in range(1000):
         filename = '%sreq%s.txt' % (path, i)
         vnr_arrive = create_network(filename)
         vnr_arrive.graph['id'] = i
+        vnr_leave = copy.deepcopy(vnr_arrive)
+        vnr_leave.graph['type'] = 1
+        vnr_leave.graph['time'] = vnr_arrive.graph['time'] + vnr_arrive.graph['duration']
         queue.append(vnr_arrive)
+        queue.append(vnr_leave)
+
+        # sort the data by their time(arrive time or depart time)
+    queue.sort(key=lambda r: r.graph['time'])
     return queue
 
 
@@ -88,24 +95,5 @@ def generate_topology_figure(graph, filename):
 
     save_path = 'results/'
     nx.draw(graph, with_labels=False, node_color='black', edge_color='gray', node_size=50)
-    # plt.show()
     plt.savefig(save_path + filename + '.png')
     plt.close()
-
-
-def read_result(filename):
-    """读取结果文件"""
-
-    with open(filename) as f:
-        lines = f.readlines()
-
-    time, acc, revenue, cost, rc = [], [], [], [], []
-    for line in lines:
-        a, b, c, d, e = [float(x) for x in line.split()]
-        time.append(a)
-        acc.append(b/a)
-        revenue.append(c/a)
-        cost.append(d)
-        rc.append(e)
-
-    return time, acc, revenue, cost, rc

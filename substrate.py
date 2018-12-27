@@ -52,22 +52,24 @@ class Substrate:
 
         elif method == "rl":
             if self.agent is None:
-                agent = RL(n_actions=self.net.number_of_nodes(),
-                           n_features=(self.net.number_of_nodes(), 4),
-                           learning_rate=0.05,
-                           num_epoch=100,
-                           batch_size=100)
-                training_set = create_training_set('data/training')
-                agent.train(self, training_set)
+                self.agent = RL(sub=self,
+                                n_actions=self.net.number_of_nodes(),
+                                n_features=(self.net.number_of_nodes(), 4),
+                                learning_rate=0.05,
+                                num_epoch=50,
+                                batch_size=100)
+                training_set = create_training_set('data/training/')
+                self.agent.train(training_set)
             node_map = self.agent.test(self, vnr)
 
         else:
-            pg = PolicyGradient(n_actions=100,
-                                n_features=(100, 7),
-                                learning_rate=0.02,
-                                reward_decay=0.95,
-                                episodes=50)
-            node_map = pg.run(self, vnr)
+            if self.agent is None:
+                self.agent = PolicyGradient(n_actions=100,
+                                            n_features=(100, 7),
+                                            learning_rate=0.02,
+                                            reward_decay=0.95,
+                                            episodes=50)
+            node_map = self.agent.run(self, vnr)
 
         return node_map
 
@@ -149,9 +151,3 @@ class Substrate:
                                         self.total_cost,
                                         self.total_revenue / self.total_cost)})
 
-    def output_results(self, filename):
-        filename = 'results/%s' % filename
-        with open(filename, 'w') as f:
-            for time, evaluation in self.evaluations.items():
-                f.write("%-10s\t" % time)
-                f.write("%-20s\t%-20s\t%-20s\t%-20s\n" % evaluation)

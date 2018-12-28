@@ -56,3 +56,7 @@ def draw():
         plt.ylabel(metric, fontsize=12)
         plt.title(title, fontsize=15)
         plt.legend(loc='best', fontsize=12)
+
+
+if __name__ == '__main__':
+    draw()

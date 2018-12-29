@@ -19,8 +19,11 @@ class RL:
         self.sess.run(tf.global_variables_initializer())
 
     def train(self, training_set):
+
+        loss_average = []
         iteration = 0
         while iteration <= self.num_epoch:
+            values = []
             print("Iteration %s" % iteration)
             # 每轮训练开始前，都需要重置底层网络和相关的强化学习环境
             sub_copy = copy.deepcopy(self.sub)
@@ -78,6 +81,7 @@ class RL:
                                                        feed_dict={self.tf_obs: epx,
                                                                   self.input_y: epy})
                             print("Success! The loss value is: %s" % loss_value)
+                            values.append(loss_value)
 
                             # 返回求解梯度
                             tf_grad = self.sess.run(self.newGrads,
@@ -114,7 +118,14 @@ class RL:
 
                 env.set_sub(sub_copy.net)
 
+            loss_average.append(np.mean(values))
+            print(np.mean(values))
             iteration = iteration + 1
+
+        with open('results/loss.txt', 'w') as f:
+            for value in loss_average:
+                f.write(str(value))
+                f.write('\n')
 
     def run(self, sub, req):
         """基于训练后的策略网络，直接得到每个虚拟网络请求的节点映射集合"""

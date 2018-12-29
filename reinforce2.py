@@ -1,6 +1,6 @@
 import tensorflow as tf
 import numpy as np
-import copy
+import copy, time
 from environment2 import Env
 
 
@@ -22,7 +22,8 @@ class RL:
 
         loss_average = []
         iteration = 0
-        while iteration <= self.num_epoch:
+        start = time.time()
+        while iteration < self.num_epoch:
             values = []
             print("Iteration %s" % iteration)
             # 每轮训练开始前，都需要重置底层网络和相关的强化学习环境
@@ -119,10 +120,11 @@ class RL:
                 env.set_sub(sub_copy.net)
 
             loss_average.append(np.mean(values))
-            print(np.mean(values))
             iteration = iteration + 1
 
+        end = time.time() - start
         with open('results/loss.txt', 'w') as f:
+            f.write("Training time: %s\n" % end)
             for value in loss_average:
                 f.write(str(value))
                 f.write('\n')

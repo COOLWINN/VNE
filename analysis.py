@@ -5,7 +5,7 @@ algorithms = ['grc-VNE', 'mcts-VNE', 'pg-VNE', 'rl-VNE']
 metrics = {'acceptance ratio': 'Acceptance Ratio',
            'average revenue': 'Long Time Average Revenue',
            'average cost': 'Long Time Average Cost',
-           'R/C': 'Long Time Revenue/Cost Ratio'}
+           'R_C': 'Long Time Revenue/Cost Ratio'}
 
 
 def save_result(sub, filename):

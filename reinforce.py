@@ -64,24 +64,24 @@ class PolicyGradient:
 
     def _build_net(self):
         with tf.name_scope('inputs'):
-            self.tf_obs = tf.placeholder(tf.float32, [None, self.n_features[0], self.n_features[1], 1],
+            self.tf_obs = tf.placeholder(tf.float32, [None, self.n_actions, self.n_features, 1],
                                          name="observations")
             self.tf_acts = tf.placeholder(tf.int32, [None, ], name="actions_num")
             self.tf_vt = tf.placeholder(tf.float32, [None, ], name="action_value")
 
         with tf.name_scope("conv"):
-            kernel = tf.Variable(tf.truncated_normal([1, self.n_features[1], 1, 1],
+            kernel = tf.Variable(tf.truncated_normal([1, self.n_features, 1, 1],
                                                      dtype=tf.float32,
                                                      stddev=0.1),
                                  name="weights")
             conv = tf.nn.conv2d(input=self.tf_obs,
                                 filter=kernel,
-                                strides=[1, 1, self.n_features[1], 1],
+                                strides=[1, 1, self.n_features, 1],
                                 padding="VALID")
             biases = tf.Variable(tf.constant(0.0, shape=[1], dtype=tf.float32),
                                  name="bias")
             conv1 = tf.nn.relu(tf.nn.bias_add(conv, biases))
-            self.scores = tf.reshape(conv1, [-1, self.n_features[0]])
+            self.scores = tf.reshape(conv1, [-1, self.n_actions])
 
         with tf.name_scope("output"):
             self.probs = tf.nn.softmax(self.scores)

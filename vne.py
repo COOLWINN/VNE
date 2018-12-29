@@ -1,7 +1,7 @@
 from substrate import Substrate
 from utils import create_requests
 import time
-from analysis import *
+from analysis import save_result
 
 
 def main():
@@ -24,17 +24,14 @@ def main():
         if req.graph['type'] == 0:
             """a request which is newly arrived"""
 
-            print("Try to map request%s: " % req_id)
+            print("\nTry to map request%s: " % req_id)
 
-            if sub.mapping_algorithm(req, algorithm):
-                print("Success!")
-            else:
-                print("Failure!")
+            sub.mapping(req, algorithm)
 
         if req.graph['type'] == 1:
             """a request which is ready to leave"""
 
-            print("Release the resources which are occupied by request%s" % req_id)
+            print("\nRelease the resources which are occupied by request%s" % req_id)
 
             if req_id in sub.mapped_info.keys():
                 sub.change_resource(req, 'release')

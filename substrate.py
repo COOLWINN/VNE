@@ -1,9 +1,6 @@
 import networkx as nx
-from utils import create_network, create_training_set
-from mcts import MCTS
-from grc import GRC
-from reinforce import PolicyGradient
-from reinforce2 import RL
+from utils import create_network
+from config import configure
 
 
 class Substrate:
@@ -18,13 +15,13 @@ class Substrate:
         self.total_cost = 0
         self.evaluations = {}
 
-    def mapping_algorithm(self, vnr, method):
+    def mapping(self, vnr, node_algorithm):
         """two phrases:node mapping and link mapping"""
 
         self.total_arrived += 1
 
         # mapping virtual nodes
-        node_map = self.node_mapping(vnr, method)
+        node_map = self.node_mapping(vnr, node_algorithm)
 
         if len(node_map) == vnr.number_of_nodes():
             # mapping virtual links
@@ -33,43 +30,23 @@ class Substrate:
             if len(link_map) == vnr.number_of_edges():
                 self.mapped_info.update({vnr.graph['id']: (node_map, link_map)})
                 self.change_resource(vnr, 'allocate')
-                return True
+                print("Success!")
+            else:
+                print("Fail at the stage of link mapping!")
+        else:
+            print("Fail at the stage of node mapping!")
 
-        return False
-
-    def node_mapping(self, vnr, method):
+    def node_mapping(self, vnr, algorithm):
         """solve the virtual node mapping problem"""
 
         print("node mapping...")
 
-        if method == 'grc':
-            grc = GRC(damping_factor=0.9, sigma=1e-6)
-            node_map = grc.run(self, vnr)
+        # 如果刚开始映射，那么需要对所选用的算法进行配置
+        if self.agent is None:
+            self.agent = configure(self, algorithm)
 
-        elif method == "mcts":
-            mcts = MCTS(computation_budget=5, exploration_constant=0.5)
-            node_map = mcts.run(self, vnr)
-
-        elif method == "rl":
-            if self.agent is None:
-                self.agent = RL(sub=self,
-                                n_actions=self.net.number_of_nodes(),
-                                n_features=(self.net.number_of_nodes(), 4),
-                                learning_rate=0.05,
-                                num_epoch=50,
-                                batch_size=100)
-                training_set = create_training_set('data/training/')
-                self.agent.train(training_set)
-            node_map = self.agent.test(self, vnr)
-
-        else:
-            if self.agent is None:
-                self.agent = PolicyGradient(n_actions=100,
-                                            n_features=(100, 7),
-                                            learning_rate=0.02,
-                                            reward_decay=0.95,
-                                            episodes=50)
-            node_map = self.agent.run(self, vnr)
+        # 使用指定的算法进行节点映射并得到节点映射集合
+        node_map = self.agent.run(self, vnr)
 
         return node_map
 

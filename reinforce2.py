@@ -1,17 +1,18 @@
 import tensorflow as tf
 import numpy as np
-import copy, time
+import copy
+import time
 from environment2 import Env
 
 
 class RL:
 
     def __init__(self, sub, n_actions, n_features, learning_rate, num_epoch, batch_size):
-        self.n_actions = n_actions
-        self.n_features = n_features
-        self.lr = learning_rate
-        self.num_epoch = num_epoch
-        self.batch_size = batch_size
+        self.n_actions = n_actions  # 动作空间大小
+        self.n_features = n_features  # 节点向量维度
+        self.lr = learning_rate  # 学习速率
+        self.num_epoch = num_epoch  # 训练轮数
+        self.batch_size = batch_size  # 批处理的批次大小
 
         self.sub = copy.deepcopy(sub)
         self._build_model()
@@ -23,6 +24,7 @@ class RL:
         loss_average = []
         iteration = 0
         start = time.time()
+        # 训练开始
         while iteration < self.num_epoch:
             values = []
             print("Iteration %s" % iteration)
@@ -37,12 +39,11 @@ class RL:
             # 记录已经处理的虚拟网络请求数量
             counter = 0
             for req in training_set:
-                # the id of current request
+                # 当前待映射的虚拟网络请求ID
                 req_id = req.graph['id']
                 print("\nHandling req%s..." % req_id)
 
                 if req.graph['type'] == 0:
-                    """a request which is newly arrived"""
 
                     print("\tIt's a newly arrived request, try to map it...")
                     counter += 1
@@ -111,7 +112,6 @@ class RL:
                             grad_buffer[ix] = grad * 0
 
                 if req.graph['type'] == 1:
-                    """a request which is ready to leave"""
 
                     print("\tIt's time is out, release the occupied resources")
                     if req_id in sub_copy.mapped_info.keys():
@@ -122,9 +122,9 @@ class RL:
             loss_average.append(np.mean(values))
             iteration = iteration + 1
 
-        end = time.time() - start
-        with open('results/loss.txt', 'w') as f:
-            f.write("Training time: %s\n" % end)
+        end = (time.time() - start) / 3600
+        with open('results/loss-%s.txt' % self.num_epoch, 'w') as f:
+            f.write("Training time: %s hours\n" % end)
             for value in loss_average:
                 f.write(str(value))
                 f.write('\n')
@@ -151,25 +151,30 @@ class RL:
         """搭建策略网络"""
 
         with tf.name_scope('inputs'):
-            self.tf_obs = tf.placeholder(tf.float32, [None, self.n_actions, self.n_features, 1],
+            self.tf_obs = tf.placeholder(dtype=tf.float32,
+                                         shape=[None, self.n_actions, self.n_features, 1],
                                          name="observations")
-            self.tf_acts = tf.placeholder(tf.int32, [None, ], name="actions_num")
-            self.tf_vt = tf.placeholder(tf.float32, [None, ], name="action_value")
+
+            self.tf_acts = tf.placeholder(dtype=tf.int32,
+                                          shape=[None, ],
+                                          name="actions_num")
+
+            self.tf_vt = tf.placeholder(dtype=tf.float32,
+                                        shape=[None, ],
+                                        name="action_value")
 
         with tf.name_scope("conv"):
-            kernel = tf.Variable(tf.truncated_normal([1, self.n_features, 1, 1],
-                                                     dtype=tf.float32,
-                                                     stddev=0.1),
-                                 name="weights")
+            self.kernel = tf.Variable(tf.truncated_normal([1, self.n_features, 1, 1],
+                                                          dtype=tf.float32,
+                                                          stddev=0.1),
+                                      name="weights")
             conv = tf.nn.conv2d(input=self.tf_obs,
-                                filter=kernel,
+                                filter=self.kernel,
                                 strides=[1, 1, self.n_features, 1],
                                 padding="VALID")
-            biases = tf.Variable(tf.constant(0.0,
-                                             shape=[1],
-                                             dtype=tf.float32),
-                                 name="bias")
-            conv1 = tf.nn.relu(tf.nn.bias_add(conv, biases))
+            self.bias = tf.Variable(tf.constant(0.0, shape=[1], dtype=tf.float32),
+                                    name="bias")
+            conv1 = tf.nn.relu(tf.nn.bias_add(conv, self.bias))
             self.scores = tf.reshape(conv1, [-1, self.n_actions])
 
         with tf.name_scope("output"):

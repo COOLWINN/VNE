@@ -40,7 +40,7 @@ def main():
     print(end)
 
     # Step4: output results
-    save_result(sub, '%s-VNE.txt' % algorithm)
+    save_result(sub, '%s-VNE-40.txt' % algorithm)
 
 
 if __name__ == '__main__':

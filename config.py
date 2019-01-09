@@ -22,7 +22,7 @@ def configure(sub, name):
                 n_actions=sub.net.number_of_nodes(),
                 n_features=4,
                 learning_rate=0.05,
-                num_epoch=50,
+                num_epoch=40,
                 batch_size=100)
         rl.train(training_set)
         return rl

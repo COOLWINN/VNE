@@ -1,6 +1,7 @@
 import networkx as nx
-from utils import create_network
+from utils import create_network, get_path_capacity
 from config import configure
+from evaluation import Evaluation
 
 
 class Substrate:
@@ -9,16 +10,12 @@ class Substrate:
         self.net = create_network(filename)
         self.agent = None
         self.mapped_info = {}
-        self.total_arrived = 0
-        self.total_accepted = 0
-        self.total_revenue = 0
-        self.total_cost = 0
-        self.evaluations = {}
+        self.evaluation = Evaluation(self.net)
 
     def mapping(self, vnr, node_algorithm):
         """two phrases:node mapping and link mapping"""
 
-        self.total_arrived += 1
+        self.evaluation.total_arrived += 1
 
         # mapping virtual nodes
         node_map = self.node_mapping(vnr, node_algorithm)
@@ -37,7 +34,7 @@ class Substrate:
             print("Fail at the stage of node mapping!")
 
     def node_mapping(self, vnr, algorithm):
-        """solve the virtual node mapping problem"""
+        """求解节点映射问题"""
 
         print("node mapping...")
 
@@ -48,10 +45,11 @@ class Substrate:
         # 使用指定的算法进行节点映射并得到节点映射集合
         node_map = self.agent.run(self, vnr)
 
+        # 返回节点映射集合
         return node_map
 
     def link_mapping(self, vnr, node_map):
-        """solve the virtual link mapping problem"""
+        """求解链路映射问题"""
 
         link_map = {}
         for vLink in vnr.edges:
@@ -61,70 +59,43 @@ class Substrate:
             sn_to = node_map[vn_to]
             if nx.has_path(self.net, source=sn_from, target=sn_to):
                 for path in nx.all_shortest_paths(self.net, source=sn_from, target=sn_to):
-                    if self._min_bw(path) >= vnr[vn_from][vn_to]['bw']:
+                    if get_path_capacity(self.net, path) >= vnr[vn_from][vn_to]['bw']:
                         link_map.update({vLink: path})
                         break
                     else:
                         continue
+
+        # 返回链路映射集合
         return link_map
 
     def change_resource(self, req, instruction):
-        """allocate or release the resource of an request"""
+        """分配或释放节点和链路资源"""
 
-        requested, occupied = 0, 0
-
-        # read node map and link map from the substrate network
+        # 读取该虚拟网络请求的映射信息
         req_id = req.graph['id']
         node_map = self.mapped_info[req_id][0]
         link_map = self.mapped_info[req_id][1]
 
         factor = -1
-        if instruction == 'allocate':
-            factor = -1
         if instruction == 'release':
             factor = 1
 
-        # allocate or release node resource
+        # 分配或释放节点资源
         for v_id, s_id in node_map.items():
-            node_resource = req.nodes[v_id]['cpu']
-            self.net.nodes[s_id]['cpu_remain'] += factor * node_resource
-            occupied += node_resource
-            requested += node_resource
+            self.net.nodes[s_id]['cpu_remain'] += factor * req.nodes[v_id]['cpu']
 
-        # allocate or release link resource
+        # 分配或释放链路资源
         for vl, path in link_map.items():
             link_resource = req[vl[0]][vl[1]]['bw']
-            requested += link_resource
             start = path[0]
             for end in path[1:]:
                 self.net[start][end]['bw_remain'] += factor * link_resource
-                occupied += link_resource
                 start = end
 
-        # allocate instruction: update evaluations
         if instruction == 'allocate':
-            self.evaluate(req.graph['time'], requested, occupied)
+            # 更新性能指标
+            self.evaluation.evaluate(req, link_map)
 
-        # release instruction: remove this request's node map and link map
         if instruction == 'release':
+            # 移除相应的映射信息
             self.mapped_info.pop(req_id)
-
-    def _min_bw(self, path):
-        """find the least bandwidth of a path"""
-        bandwidth = 1000
-        head = path[0]
-        for tail in path[1:]:
-            if self.net[head][tail]['bw_remain'] <= bandwidth:
-                bandwidth = self.net[head][tail]['bw_remain']
-            head = tail
-        return bandwidth
-
-    def evaluate(self, time, requested, occupied):
-        self.total_accepted += 1
-        self.total_revenue += requested
-        self.total_cost += occupied
-        self.evaluations.update({time: (self.total_accepted / self.total_arrived,
-                                        self.total_revenue,
-                                        self.total_cost,
-                                        self.total_revenue / self.total_cost)})
-

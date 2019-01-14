@@ -31,9 +31,8 @@ def main():
         if req.graph['type'] == 1:
             """a request which is ready to leave"""
 
-            print("\nRelease the resources which are occupied by request%s" % req_id)
-
             if req_id in sub.mapped_info.keys():
+                print("\nRelease the resources which are occupied by request%s" % req_id)
                 sub.change_resource(req, 'release')
 
     end = time.time()-start

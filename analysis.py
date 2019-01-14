@@ -1,21 +1,24 @@
 import matplotlib.pyplot as plt
 
+root = 'results/'
 line_types = ['b:', 'r--', 'y-.', 'g-']
 algorithms = ['grc-VNE', 'mcts-VNE', 'pg-VNE', 'rl-VNE']
 metrics = {'acceptance ratio': 'Acceptance Ratio',
            'average revenue': 'Long Time Average Revenue',
            'average cost': 'Long Time Average Cost',
-           'R_C': 'Long Time Revenue/Cost Ratio'}
+           'R_C': 'Long Time Revenue/Cost Ratio',
+           'node utilization': 'Average Node Utilization',
+           'link utilization': 'Average Link Utilization'}
 
 
 def save_result(sub, filename):
     """将一段时间内底层网络的性能指标输出到指定文件内"""
 
-    filename = 'results/%s' % filename
+    filename = root + filename
     with open(filename, 'w') as f:
-        for time, evaluation in sub.evaluations.items():
+        for time, evaluation in sub.evaluation.metrics.items():
             f.write("%-10s\t" % time)
-            f.write("%-20s\t%-20s\t%-20s\t%-20s\n" % evaluation)
+            f.write("%-20s\t%-20s\t%-20s\t%-20s\t%-20s\t%-20s\n" % evaluation)
 
 
 def read_result(filename):
@@ -24,16 +27,18 @@ def read_result(filename):
     with open(filename) as f:
         lines = f.readlines()
 
-    t, acceptance, revenue, cost, r_to_c = [], [], [], [], []
+    t, acceptance, revenue, cost, r_to_c, node_stress, link_stress = [], [], [], [], [], [], []
     for line in lines:
-        a, b, c, d, e = [float(x) for x in line.split()]
+        a, b, c, d, e, f, g = [float(x) for x in line.split()]
         t.append(a)
         acceptance.append(b)
         revenue.append(c / a)
         cost.append(d / a)
         r_to_c.append(e)
+        node_stress.append(f)
+        link_stress.append(g)
 
-    return t, acceptance, revenue, cost, r_to_c
+    return t, acceptance, revenue, cost, r_to_c, node_stress, link_stress
 
 
 def draw():
@@ -41,7 +46,7 @@ def draw():
 
     results = []
     for alg in algorithms:
-        results.append(read_result(alg + '.txt'))
+        results.append(read_result(root + alg + '.txt'))
 
     index = 0
     for metric, title in metrics.items():
@@ -56,6 +61,7 @@ def draw():
         plt.ylabel(metric, fontsize=12)
         plt.title(title, fontsize=15)
         plt.legend(loc='best', fontsize=12)
+    plt.show()
 
 
 if __name__ == '__main__':

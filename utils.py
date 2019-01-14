@@ -90,6 +90,18 @@ def calculate_adjacent_bw(graph, u, kind='bw'):
     return bw_sum
 
 
+def get_path_capacity(graph, path):
+        """找到一条路径中带宽资源最小的链路并返回其带宽资源值"""
+
+        bandwidth = 1000
+        head = path[0]
+        for tail in path[1:]:
+            if graph[head][tail]['bw_remain'] <= bandwidth:
+                bandwidth = graph[head][tail]['bw_remain']
+            head = tail
+        return bandwidth
+
+
 def generate_topology_figure(graph, filename):
     """绘制拓扑图并保存"""
 

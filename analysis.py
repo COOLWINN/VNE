@@ -4,9 +4,9 @@ root = 'results/'
 line_types = ['b:', 'r--', 'y-.', 'g-']
 algorithms = ['grc-VNE', 'mcts-VNE', 'pg-VNE', 'rl-VNE']
 metrics = {'acceptance ratio': 'Acceptance Ratio',
-           'average revenue': 'Long Time Average Revenue',
-           'average cost': 'Long Time Average Cost',
-           'R_C': 'Long Time Revenue/Cost Ratio',
+           'average revenue': 'Long Term Average Revenue',
+           'average cost': 'Long Term Average Cost',
+           'R_C': 'Long Term Revenue/Cost Ratio',
            'node utilization': 'Average Node Utilization',
            'link utilization': 'Average Link Utilization'}
 

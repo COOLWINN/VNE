@@ -25,7 +25,6 @@ def main():
             """a request which is newly arrived"""
 
             print("\nTry to map request%s: " % req_id)
-
             sub.mapping(req, algorithm)
 
         if req.graph['type'] == 1:
@@ -39,7 +38,7 @@ def main():
     print(end)
 
     # Step4: output results
-    save_result(sub, '%s-VNE-40.txt' % algorithm)
+    save_result(sub, '%s-VNE.txt' % algorithm)
 
 
 if __name__ == '__main__':

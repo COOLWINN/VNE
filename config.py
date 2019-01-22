@@ -1,8 +1,8 @@
 from utils import create_training_set
-from grc import GRC
-from mcts import MCTS
+from comparison1.grc import GRC
+from comparison2.mcts import MCTS
+from comparison3.agent import RL
 from reinforce import PolicyGradient
-from reinforce2 import RL
 
 
 def configure(sub, name):
@@ -16,7 +16,7 @@ def configure(sub, name):
         return mcts
 
     elif name == 'rl':
-        directory = 'data/training/'
+        directory = 'comparison3/training_set/'
         training_set = create_training_set(directory)
         rl = RL(sub=sub,
                 n_actions=sub.net.number_of_nodes(),

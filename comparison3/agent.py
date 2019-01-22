@@ -2,7 +2,7 @@ import tensorflow as tf
 import numpy as np
 import copy
 import time
-from environment2 import Env
+from comparison3.mdp import Env
 
 
 class RL:

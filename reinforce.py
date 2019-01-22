@@ -1,6 +1,6 @@
 import tensorflow as tf
 import numpy as np
-from environment1 import MyEnv
+from my_mdp import MyEnv
 
 
 class PolicyGradient:

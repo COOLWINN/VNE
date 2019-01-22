@@ -1,9 +1,10 @@
-import matplotlib.pyplot as plt
 import os
+import matplotlib.pyplot as plt
+import networkx as nx
 
-root = 'results/'
-if not os.path.exists(root):
-    os.makedirs(root)
+result_path = 'results/'
+if not os.path.exists(result_path):
+    os.makedirs(result_path)
 
 line_types = ['b:', 'r--', 'y-.', 'g-']
 algorithms = ['grc-VNE', 'mcts-VNE', 'pg-VNE', 'rl-VNE']
@@ -18,7 +19,7 @@ metrics = {'acceptance ratio': 'Acceptance Ratio',
 def save_result(sub, filename):
     """将一段时间内底层网络的性能指标输出到指定文件内"""
 
-    filename = root + filename
+    filename = result_path + filename
     with open(filename, 'w') as f:
         for time, evaluation in sub.evaluation.metrics.items():
             f.write("%-10s\t" % time)
@@ -45,12 +46,12 @@ def read_result(filename):
     return t, acceptance, revenue, cost, r_to_c, node_stress, link_stress
 
 
-def draw():
+def draw_result():
     """绘制实验结果图"""
 
     results = []
     for alg in algorithms:
-        results.append(read_result(root + alg + '.txt'))
+        results.append(read_result(result_path + alg + '.txt'))
 
     index = 0
     for metric, title in metrics.items():
@@ -68,5 +69,13 @@ def draw():
     plt.show()
 
 
+def draw_topology(graph, filename):
+    """绘制拓扑图"""
+
+    nx.draw(graph, with_labels=False, node_color='black', edge_color='gray', node_size=50)
+    plt.savefig(result_path + filename + '.png')
+    plt.close()
+
+
 if __name__ == '__main__':
-    draw()
+    draw_result()

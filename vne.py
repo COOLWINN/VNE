@@ -1,6 +1,6 @@
-from substrate import Substrate
-from utils import read_requests
 import time
+from substrate import Substrate
+from extract import read_requests
 from analysis import save_result
 
 

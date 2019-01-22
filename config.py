@@ -1,8 +1,8 @@
-from utils import create_training_set
+from extract import create_training_set
 from comparison1.grc import GRC
 from comparison2.mcts import MCTS
 from comparison3.agent import RL
-from reinforce import PolicyGradient
+from mine.reinforce import PolicyGradient
 
 
 def configure(sub, name):

@@ -6,7 +6,6 @@ __pycache__/
 
 .idea
 venv/
-results/
-temp_files/
 generated/
-requests/
+networks/
+results/

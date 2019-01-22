@@ -1,5 +1,6 @@
 import networkx as nx
-from utils import read_network_file, get_path_capacity
+from extract import read_network_file
+from utils import get_path_capacity
 from config import configure
 from evaluation import Evaluation
 

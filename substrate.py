@@ -1,5 +1,5 @@
 import networkx as nx
-from utils import create_network, get_path_capacity
+from utils import read_network_file, get_path_capacity
 from config import configure
 from evaluation import Evaluation
 
@@ -7,7 +7,7 @@ from evaluation import Evaluation
 class Substrate:
 
     def __init__(self, filename):
-        self.net = create_network(filename)
+        self.net = read_network_file(filename)
         self.agent = None
         self.mapped_info = {}
         self.evaluation = Evaluation(self.net)
@@ -93,8 +93,8 @@ class Substrate:
                 start = end
 
         if instruction == 'allocate':
-            # 更新性能指标
-            self.evaluation.evaluate(req, link_map)
+            # 增加实验结果
+            self.evaluation.add(req, link_map)
 
         if instruction == 'release':
             # 移除相应的映射信息

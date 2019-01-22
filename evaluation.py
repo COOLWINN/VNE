@@ -16,7 +16,7 @@ class Evaluation:
         # 每个时刻对应的性能指标元组（请求接受率、平均收益、平均成本、收益成本比、平均节点利用率、平均链路利用率）
         self.metrics = {}
 
-    def evaluate(self, req, link_map):
+    def add(self, req, link_map):
         """增加对应的评估指标值"""
         self.total_accepted += 1
         self.total_revenue += self.calcualte_revenue(req)

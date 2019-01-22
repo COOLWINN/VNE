@@ -1,5 +1,5 @@
 from substrate import Substrate
-from utils import create_requests
+from utils import read_requests
 import time
 from analysis import save_result
 
@@ -9,7 +9,7 @@ def main():
     # Step1: create the substrate network and VNRs.
     directory = 'data/'
     sub = Substrate(directory + 'sub.txt')
-    reqs = create_requests(directory)
+    reqs = read_requests(directory)
 
     # Step2: choose an algorithm to run
     algorithm = input("Please select an algorithm('grc','mcts','rl','mine'): ")

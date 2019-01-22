@@ -3,7 +3,7 @@ import copy
 import matplotlib.pyplot as plt
 
 
-def create_network(filename):
+def read_network_file(filename):
     """读取网络拓扑文件并生成一个networkx.Graph实例"""
 
     node_id, link_id = 0, 0
@@ -43,13 +43,13 @@ def create_network(filename):
     return graph
 
 
-def create_requests(path):
+def read_requests(path):
     """创建虚拟网络请求事件队列"""
 
     queue = []
     for i in range(2000):
         filename = '%sreq%s.txt' % (path, i)
-        vnr_arrive = create_network(filename)
+        vnr_arrive = read_network_file(filename)
         vnr_arrive.graph['id'] = i
         vnr_leave = copy.deepcopy(vnr_arrive)
         vnr_leave.graph['type'] = 1
@@ -68,7 +68,7 @@ def create_training_set(path):
     queue = []
     for i in range(1000):
         filename = '%sreq%s.txt' % (path, i)
-        vnr_arrive = create_network(filename)
+        vnr_arrive = read_network_file(filename)
         vnr_arrive.graph['id'] = i
         vnr_leave = copy.deepcopy(vnr_arrive)
         vnr_leave.graph['type'] = 1
@@ -91,15 +91,15 @@ def calculate_adjacent_bw(graph, u, kind='bw'):
 
 
 def get_path_capacity(graph, path):
-        """找到一条路径中带宽资源最小的链路并返回其带宽资源值"""
+    """找到一条路径中带宽资源最小的链路并返回其带宽资源值"""
 
-        bandwidth = 1000
-        head = path[0]
-        for tail in path[1:]:
-            if graph[head][tail]['bw_remain'] <= bandwidth:
-                bandwidth = graph[head][tail]['bw_remain']
-            head = tail
-        return bandwidth
+    bandwidth = 1000
+    head = path[0]
+    for tail in path[1:]:
+        if graph[head][tail]['bw_remain'] <= bandwidth:
+            bandwidth = graph[head][tail]['bw_remain']
+        head = tail
+    return bandwidth
 
 
 def generate_topology_figure(graph, filename):

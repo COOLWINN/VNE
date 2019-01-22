@@ -8,4 +8,5 @@ __pycache__/
 venv/
 results/
 temp_files/
-network_files/*.o
+generated/
+requests/

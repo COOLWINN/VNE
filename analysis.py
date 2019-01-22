@@ -1,6 +1,10 @@
 import matplotlib.pyplot as plt
+import os
 
 root = 'results/'
+if not os.path.exists(root):
+    os.makedirs(root)
+
 line_types = ['b:', 'r--', 'y-.', 'g-']
 algorithms = ['grc-VNE', 'mcts-VNE', 'pg-VNE', 'rl-VNE']
 metrics = {'acceptance ratio': 'Acceptance Ratio',

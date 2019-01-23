@@ -7,9 +7,10 @@ from analysis import save_result
 def main():
 
     # Step1: create the substrate network and VNRs.
-    directory = 'data/'
-    sub = Substrate(directory + 'sub.txt')
-    reqs = read_requests(directory)
+    network_path = 'requests/'
+    sub_filename = 'sub.txt'
+    sub = Substrate(network_path + sub_filename)
+    reqs = read_requests(network_path, 2000)
 
     # Step2: choose an algorithm to run
     algorithm = input("Please select an algorithm('grc','mcts','rl','mine'): ")

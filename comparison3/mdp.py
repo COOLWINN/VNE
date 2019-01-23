@@ -3,7 +3,7 @@ from gym import spaces
 import copy
 import networkx as nx
 import numpy as np
-from utils import calculate_adjacent_bw
+from substrate import calculate_adjacent_bw
 
 
 class Env(gym.Env):

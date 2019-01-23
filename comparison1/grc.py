@@ -1,5 +1,5 @@
 import numpy as np
-from utils import calculate_adjacent_bw
+from substrate import calculate_adjacent_bw
 
 
 class GRC:

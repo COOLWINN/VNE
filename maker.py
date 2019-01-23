@@ -245,7 +245,12 @@ def make_reqs(possion_mean):
 
 
 if __name__ == '__main__':
+
+    # 生成节点数为100，连通率为0.5的随机型物理网络
     # make_sub_wm(100, 0.5)
-    # make_sub_ts(1, 3, 4, 0.5, 8, 0.5)
+
+    # 生成节点数为1×4×(1+3×8)=100，连通率为0.5的Transit-Stub型物理网络
+    make_sub_ts(1, 3, 4, 0.5, 8, 0.5)
+
     # 平均每1000个时间单位内到达40个虚拟网络请求
-    make_reqs(40)
+    # make_reqs(40)

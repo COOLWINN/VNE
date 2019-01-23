@@ -42,13 +42,13 @@ def read_network_file(filename):
     return graph
 
 
-def read_requests(path):
+def read_requests(path, number):
     """创建虚拟网络请求事件队列"""
 
     queue = []
-    for i in range(2000):
-        filename = '%sreq%s.txt' % (path, i)
-        vnr_arrive = read_network_file(filename)
+    for i in range(number):
+        filename = 'req%d.txt' % i
+        vnr_arrive = read_network_file(path + filename)
         vnr_arrive.graph['id'] = i
         vnr_leave = copy.deepcopy(vnr_arrive)
         vnr_leave.graph['type'] = 1
@@ -56,25 +56,6 @@ def read_requests(path):
         queue.append(vnr_arrive)
         queue.append(vnr_leave)
 
-    # sort the data by their time(arrive time or depart time)
-    queue.sort(key=lambda r: r.graph['time'])
-    return queue
-
-
-def create_training_set(path):
-    """创建虚拟网络请求事件队列"""
-
-    queue = []
-    for i in range(1000):
-        filename = '%sreq%s.txt' % (path, i)
-        vnr_arrive = read_network_file(filename)
-        vnr_arrive.graph['id'] = i
-        vnr_leave = copy.deepcopy(vnr_arrive)
-        vnr_leave.graph['type'] = 1
-        vnr_leave.graph['time'] = vnr_arrive.graph['time'] + vnr_arrive.graph['duration']
-        queue.append(vnr_arrive)
-        queue.append(vnr_leave)
-
-        # sort the data by their time(arrive time or depart time)
+    # sort the requests by their time(arrive time or depart time)
     queue.sort(key=lambda r: r.graph['time'])
     return queue

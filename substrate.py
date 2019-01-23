@@ -1,8 +1,16 @@
 import networkx as nx
 from extract import read_network_file
-from utils import get_path_capacity
 from config import configure
 from evaluation import Evaluation
+
+
+def calculate_adjacent_bw(graph, u, kind='bw'):
+    """计算一个节点的相邻链路带宽和，默认为总带宽和，若计算剩余带宽资源和，需指定kind属性为bw-remain"""
+
+    bw_sum = 0
+    for v in graph.neighbors(u):
+        bw_sum += graph[u][v][kind]
+    return bw_sum
 
 
 class Substrate:
@@ -60,7 +68,7 @@ class Substrate:
             sn_to = node_map[vn_to]
             if nx.has_path(self.net, source=sn_from, target=sn_to):
                 for path in nx.all_shortest_paths(self.net, source=sn_from, target=sn_to):
-                    if get_path_capacity(self.net, path) >= vnr[vn_from][vn_to]['bw']:
+                    if self.get_path_capacity(path) >= vnr[vn_from][vn_to]['bw']:
                         link_map.update({vLink: path})
                         break
                     else:
@@ -100,3 +108,14 @@ class Substrate:
         if instruction == 'release':
             # 移除相应的映射信息
             self.mapped_info.pop(req_id)
+
+    def get_path_capacity(self, path):
+        """找到一条路径中带宽资源最小的链路并返回其带宽资源值"""
+
+        bandwidth = 1000
+        head = path[0]
+        for tail in path[1:]:
+            if self.net[head][tail]['bw_remain'] <= bandwidth:
+                bandwidth = self.net[head][tail]['bw_remain']
+            head = tail
+        return bandwidth

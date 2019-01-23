@@ -1,7 +1,9 @@
 import math
 import random
 import os
+import copy
 import numpy as np
+import networkx as nx
 
 # 仿真时间
 TOTAL_TIME = 50000
@@ -14,8 +16,6 @@ LINK_CAPACITY = 100
 # 仅与虚拟网络请求相关的参数
 DURATION_MEAN = 1000
 MIN_DURATION = 250
-MIN_NUM_NODE = 3
-MAX_NUM_NODE = 20
 MAX_DISTANCE = 20
 
 # itm和sgb2alt指令的绝对路径
@@ -160,8 +160,9 @@ def make_sub_ts(transits, stubs, transit_nodes, transit_p, stub_nodes, stub_p):
                 sub_file.write("%d %d %f %f\n" % (from_id, to_id, resource, distance))
 
 
-# possion_mean的含义：虚拟网络请求的到达服从泊松分布，且平均每1000个时间单位内到达的数量为40个
-def make_reqs(possion_mean):
+# possion_mean：虚拟网络请求的到达服从泊松分布，且平均每1000个时间单位内到达的数量为possion_mean个
+# 虚拟节点数量服从[min_num_nodes, max_num_nodes]的均匀分布
+def make_req(possion_mean, min_num_nodes, max_num_nodes):
     """生成虚拟网络请求文件"""
 
     # 时间间隔
@@ -184,7 +185,7 @@ def make_reqs(possion_mean):
         spec_filename = 'itm-spec%d' % i
         with open(spec_dir + spec_filename, 'w') as f:
             f.write("geo 1\n")
-            t = MIN_NUM_NODE + random.randint(0, MAX_NUM_NODE - MIN_NUM_NODE)
+            t = random.randint(min_num_nodes, max_num_nodes)
             f.write("%d %d 2 0.5 0.2\n" % (t, SCALE))
 
         # Step2: 执行itm指令生成gb文件
@@ -244,6 +245,66 @@ def make_reqs(possion_mean):
                 req_file.write("%d %d %f %f\n" % (from_id, to_id, resource, delay))
 
 
+def extract_network(path, filename):
+    """读取网络文件并生成networkx.Graph实例"""
+
+    node_id, link_id = 0, 0
+
+    with open(path + filename) as f:
+        lines = f.readlines()
+
+    if len(lines[0].split()) == 2:
+        """create a substrate network"""
+
+        node_num, link_num = [int(x) for x in lines[0].split()]
+        graph = nx.Graph()
+        for line in lines[1: node_num + 1]:
+            x, y, c = [float(x) for x in line.split()]
+            graph.add_node(node_id, x_coordinate=x, y_coordinate=y, cpu=c, cpu_remain=c)
+            node_id = node_id + 1
+
+        for line in lines[-link_num:]:
+            src, dst, bw, dis = [float(x) for x in line.split()]
+            graph.add_edge(int(src), int(dst), link_id=link_id, bw=bw, bw_remain=bw, distance=dis)
+            link_id = link_id + 1
+    else:
+        """create a virtual network"""
+
+        node_num, link_num, time, duration, maxD = [int(x) for x in lines[0].split()]
+        graph = nx.Graph(type=0, time=time, duration=duration)
+        for line in lines[1:node_num + 1]:
+            x, y, c = [float(x) for x in line.split()]
+            graph.add_node(node_id, x_coordinate=x, y_coordinate=y, cpu=c)
+            node_id = node_id + 1
+
+        for line in lines[-link_num:]:
+            src, dst, bw, dis = [float(x) for x in line.split()]
+            graph.add_edge(int(src), int(dst), link_id=link_id, bw=bw, distance=dis)
+            link_id = link_id + 1
+
+    return graph
+
+
+def simulate_events(path, number):
+    """读取number个虚拟网络，构成虚拟网络请求事件队列"""
+
+    queue = []
+    for i in range(number):
+        filename = 'req%d.txt' % i
+        vnr_arrive = extract_network(path, filename)
+        vnr_arrive.graph['id'] = i
+        vnr_leave = copy.deepcopy(vnr_arrive)
+        vnr_leave.graph['type'] = 1
+        vnr_leave.graph['time'] = vnr_arrive.graph['time'] + vnr_arrive.graph['duration']
+        queue.append(vnr_arrive)
+        queue.append(vnr_leave)
+
+    # 按照时间（到达时间或离开时间）对这些虚拟网络请求从小到大进行排序
+    queue.sort(key=lambda r: r.graph['time'])
+
+    return queue
+
+
 if __name__ == '__main__':
 
     # 生成节点数为100，连通率为0.5的随机型物理网络
@@ -252,5 +313,5 @@ if __name__ == '__main__':
     # 生成节点数为1×4×(1+3×8)=100，连通率为0.5的Transit-Stub型物理网络
     make_sub_ts(1, 3, 4, 0.5, 8, 0.5)
 
-    # 平均每1000个时间单位内到达40个虚拟网络请求
-    # make_reqs(40)
+    # 平均每1000个时间单位内到达40个虚拟网络请求, 且虚拟节点数服从3~20的均匀分布
+    make_req(40, 3, 20)

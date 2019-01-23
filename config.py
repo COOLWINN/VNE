@@ -1,4 +1,4 @@
-from extract import read_requests
+from maker import simulate_events
 from comparison1.grc import GRC
 from comparison2.mcts import MCTS
 from comparison3.agent import RL
@@ -16,8 +16,8 @@ def configure(sub, name):
         return mcts
 
     elif name == 'rl':
-        training_path = 'comparison3/training_set/'
-        training_set = read_requests(training_path, 1000)
+        training_set_path = 'comparison3/training_set/'
+        training_set = simulate_events(training_set_path, 1000)
         rl = RL(sub=sub,
                 n_actions=sub.net.number_of_nodes(),
                 n_features=4,

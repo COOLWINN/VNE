@@ -1,5 +1,5 @@
 import networkx as nx
-from extract import read_network_file
+from maker import extract_network
 from config import configure
 from evaluation import Evaluation
 
@@ -15,8 +15,8 @@ def calculate_adjacent_bw(graph, u, kind='bw'):
 
 class Substrate:
 
-    def __init__(self, filename):
-        self.net = read_network_file(filename)
+    def __init__(self, path, filename):
+        self.net = extract_network(path, filename)
         self.agent = None
         self.mapped_info = {}
         self.evaluation = Evaluation(self.net)

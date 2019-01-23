@@ -1,6 +1,6 @@
 import time
 from substrate import Substrate
-from extract import read_requests
+from maker import simulate_events
 from analysis import save_result
 
 
@@ -9,15 +9,15 @@ def main():
     # Step1: create the substrate network and VNRs.
     network_path = 'requests/'
     sub_filename = 'sub.txt'
-    sub = Substrate(network_path + sub_filename)
-    reqs = read_requests(network_path, 2000)
+    sub = Substrate(network_path, sub_filename)
+    event_queue = simulate_events(network_path, 2000)
 
     # Step2: choose an algorithm to run
     algorithm = input("Please select an algorithm('grc','mcts','rl','mine'): ")
 
     # Step3: handle requests
     start = time.time()
-    for req in reqs:
+    for req in event_queue:
 
         # the id of current request
         req_id = req.graph['id']

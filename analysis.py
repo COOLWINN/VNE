@@ -1,6 +1,6 @@
 import os
-import matplotlib.pyplot as plt
 import networkx as nx
+import matplotlib.pyplot as plt
 
 result_path = 'results/'
 if not os.path.exists(result_path):

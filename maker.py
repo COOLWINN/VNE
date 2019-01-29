@@ -66,7 +66,7 @@ def generate_network(network_name, min_res, max_res, time=0, duration=0, transit
         num_nodes = int(line_one[0])
         num_edges = int(int(line_one[1]) / 2)
         if network_name == 'sub-wm' or network_name == 'sub-ts':
-            # 物理拟网络信息包括：节点数量、链路数量
+            # 物理网络信息包括：节点数量、链路数量
             network_file.write("%d %d\n" % (num_nodes, num_edges))
         else:
             # 虚拟网络信息包括：节点数量、链路数量、到达时间、持续时间、可映射范围
@@ -79,9 +79,12 @@ def generate_network(network_name, min_res, max_res, time=0, duration=0, transit
             y = int(blocks[3])
             coordinates.append((x, y))
             resource = random.uniform(min_res, max_res)
+
+            # 属于transit-stub模型网络的特殊操作
             if network_name == 'sub-ts' and len(coordinates) <= transit_nodes:
                 network_file.write("%d %d %f\n" % (x, y, 200 + resource))
                 continue
+
             network_file.write("%d %d %f\n" % (x, y, resource))
 
         # Step4-3: 依次写入链路信息（起始节点，终止节点，带宽资源，时延）
@@ -89,6 +92,8 @@ def generate_network(network_name, min_res, max_res, time=0, duration=0, transit
             from_id, to_id, length, a = [int(x) for x in line.split()]
             distance = calculate_dis(coordinates[from_id], coordinates[to_id])
             resource = random.uniform(min_res, max_res)
+
+            # 属于transit-stub模型网络的特殊操作
             if network_name == 'sub-ts':
                 if from_id < transit_nodes and to_id < transit_nodes:
                     network_file.write("%d %d %f %f\n" % (from_id, to_id, 200 + resource, distance))
@@ -96,6 +101,7 @@ def generate_network(network_name, min_res, max_res, time=0, duration=0, transit
                 if from_id < transit_nodes or to_id < transit_nodes:
                     network_file.write("%d %d %f %f\n" % (from_id, to_id, 100 + resource, distance))
                     continue
+
             network_file.write("%d %d %f %f\n" % (from_id, to_id, resource, distance))
 
 
@@ -125,7 +131,7 @@ def make_sub_ts(transits, stubs, transit_nodes, transit_p, stub_nodes, stub_p, m
 
     network_name = 'sub-ts'
 
-    # Step1: 生成GT-ITM配置文件
+    # 生成GT-ITM配置文件
     spec_filename = 'spec-%s' % network_name
     with open(spec_dir + spec_filename, 'w') as f:
         f.write("ts 1 47\n")
@@ -141,7 +147,7 @@ def make_sub_ts(transits, stubs, transit_nodes, transit_p, stub_nodes, stub_p, m
 def make_req(index, min_res, max_res, node_amount, time, duration):
     """生成虚拟网络请求文件"""
 
-    network_name = 'req%d' % index
+    network_name = 'req%s' % index
 
     # 生成GT-ITM配置文件
     spec_filename = 'spec-%s' % network_name
@@ -163,9 +169,9 @@ def make_batch_req(possion_mean, min_num_nodes, max_num_nodes, min_res, max_res)
     # 虚拟网络请求数量
     req_num = int(possion_mean / interval * TOTAL_TIME)
     # 在一个时间间隔内到达的VNR数量
-    k = 0
+    req_num_interval = 0
     # 记录该时间间隔内已到达的VNR数量
-    count_k = 0
+    count = 0
     # 记录已经经历了多少个时间间隔
     p = 0
     # 每个时间间隔的起始时间
@@ -174,19 +180,32 @@ def make_batch_req(possion_mean, min_num_nodes, max_num_nodes, min_res, max_res)
     # 按照以下步骤分别生成req_num个虚拟网络请求文件
     for i in range(req_num):
 
-        if count_k == k:
-            k = 0
-            while k == 0:
-                k = np.random.poisson(possion_mean)
-            count_k = 0
+        if count == req_num_interval:
+            req_num_interval = 0
+            while req_num_interval == 0:
+                req_num_interval = np.random.poisson(possion_mean)
+            count = 0
             start = p * interval
             p += 1
-        count_k += 1
-
-        time = start + ((count_k + 1) / (k + 1)) * interval
+        count += 1
+        time = start + ((count + 1) / (req_num_interval + 1)) * interval
         duration = MIN_DURATION + int(-math.log(random.random()) * (DURATION_MEAN - MIN_DURATION))
+
         node_amount = random.randint(min_num_nodes, max_num_nodes)
         make_req(i, min_res, max_res, node_amount, time, duration)
+
+        # 生成第2层虚拟网络文件
+        for j in range(5):
+
+            j_node_amount = random.randint(min_num_nodes * 0.5, max_num_nodes * 0.5)
+            index = "%d-%d" % (i, j)
+            make_req(index, min_res * 0.5, max_res * 0.5, j_node_amount, time, duration)
+
+            # 生成第3层虚拟网络文件
+            for k in range(3):
+                k_node_amount = random.randint(3, min_num_nodes * 0.5 * 0.5)
+                index = "%d-%d-%d" % (i, j, k)
+                make_req(index, 0, min_res * 0.5, k_node_amount, time, duration)
 
 
 def extract_network(path, filename):
@@ -232,7 +251,12 @@ def extract_network(path, filename):
 def simulate_events(path, number):
     """读取number个虚拟网络，构成虚拟网络请求事件队列"""
 
+    # 第1层虚拟网络请求
     queue = []
+    # 第2层虚拟网络请求
+    queue_second = []
+    # 第3层虚拟网络请求
+    queue_third = []
     for i in range(number):
         filename = 'req%d.txt' % i
         vnr_arrive = extract_network(path, filename)
@@ -243,6 +267,23 @@ def simulate_events(path, number):
         queue.append(vnr_arrive)
         queue.append(vnr_leave)
 
+        children_of_first = []
+        second_list = []
+        for j in range(5):
+            second_filename = 'req%d-%d' % (i, j)
+            second_req = extract_network(path, second_filename)
+            children_of_first.append(second_req)
+
+            children_of_second = []
+            for k in range(3):
+                third_filename = 'req%d-%d-%d' % (i, j, k)
+                vnr_arrive = extract_network(path, third_filename)
+                children_of_second.append(vnr_arrive)
+            second_list.append(children_of_second)
+
+        queue_second.append(children_of_first)
+        queue_third.append(second_list)
+
     # 按照时间（到达时间或离开时间）对这些虚拟网络请求从小到大进行排序
     queue.sort(key=lambda r: r.graph['time'])
 
@@ -250,11 +291,12 @@ def simulate_events(path, number):
 
 
 if __name__ == '__main__':
+
     # 生成节点数为100，连通率为0.5的随机型物理网络
-    # make_sub_wm(100, 0.5, 50, 100)
+    make_sub_wm(500, 0.5, 400, 500)
 
     # 生成节点数为1×4×(1+3×8)=100，连通率为0.5的Transit-Stub型物理网络
-    make_sub_ts(1, 3, 4, 0.5, 8, 0.5, 50, 100)
+    # make_sub_ts(1, 3, 4, 0.5, 8, 0.5, 50, 100)
 
     # 平均每1000个时间单位内到达40个虚拟网络请求， 且虚拟节点数服从3~20的均匀分布，请求资源服从0~50的均匀分布
-    # make_batch_req(40, 3, 20, 0, 50)
+    make_batch_req(40, 40, 60, 50, 100)

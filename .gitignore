@@ -9,3 +9,4 @@ venv/
 generated/
 networks/
 results/
+model_saved/

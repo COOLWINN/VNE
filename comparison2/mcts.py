@@ -8,8 +8,8 @@ LIMIT = -sys.maxsize
 
 class State:
     """
-    蒙特卡罗树搜索的游戏状态，记录在某一个Node节点下的状态数据，包含当前的游戏得分、
-    当前的游戏round数、从开始到当前的执行记录。
+    蒙特卡罗树搜索的游戏状态，记录在某一个Node节点下的状态数据，
+    包含当前的游戏得分、当前的游戏round数、从开始到当前的执行记录。
     需要实现判断当前状态是否达到游戏结束状态，支持从Action集合中随机取出操作。
     """
 
@@ -56,8 +56,7 @@ class State:
 
     def compute_final_reward(self):
         """
-        if the vnr can be mapped successfully, the final reward is revenue minus cost;
-        else, we should mark the final reward as a infinitesimal number
+        如果虚拟网络请求能够被成功映射，那么最终奖赏为收益减去成本；否则，最终奖赏为一个无穷小的值
         """
 
         node_map = {}
@@ -189,7 +188,7 @@ class MCTS:
         蒙特卡洛树搜索包含四个步骤，Selection、Expansion、Simulation、Backpropagation。
         前两步使用tree policy找到值得探索的节点。
         第三步使用default policy也就是在选中的节点上随机算法选一个子节点并计算reward。
-        最后一步使用backup也就是把reward更新到所有经过的选中节点的节点上。
+        最后一步使用backup也就是把reward更新到所有经过的选中节点上。
         进行预测时，只需要根据Q值选择exploitation最大的节点即可，找到下一个最优的节点。
         """
 
@@ -212,7 +211,7 @@ class MCTS:
     def tree_policy(self, node):
         """
         蒙特卡罗树搜索的Selection和Expansion阶段，传入当前需要开始搜索的节点（例如根节点），
-        根据exploration/exploitation算法返回最好的需要expend的节点，注意如果节点是叶子结点直接返回。
+        根据exploration/exploitation算法返回最好的需要expand的节点，注意如果节点是叶子结点直接返回。
         基本策略是:
         (1)先找当前未选择过的子节点，如果有多个则随机选。
         (2)如果都选择过就找权衡过exploration/exploitation的UCB值最大的，如果UCB值相等则随机选。
@@ -298,8 +297,8 @@ class MCTS:
 
     def backup(self, node, reward):
         """
-        蒙特卡洛树搜索的Backpropagation阶段，输入前面获取需要expend的节点和新执行Action的reward，
-        反馈给expend节点和上游所有节点并更新对应数据。
+        蒙特卡洛树搜索的Backpropagation阶段，输入前面获取需要expand的节点和新执行Action的reward，
+        反馈给expand节点和上游所有节点并更新对应数据。
         """
 
         # Update util the root node

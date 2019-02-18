@@ -267,22 +267,22 @@ def simulate_events(path, number):
         queue.append(vnr_arrive)
         queue.append(vnr_leave)
 
-        children_of_first = []
-        second_list = []
-        for j in range(5):
-            second_filename = 'req%d-%d' % (i, j)
-            second_req = extract_network(path, second_filename)
-            children_of_first.append(second_req)
-
-            children_of_second = []
-            for k in range(3):
-                third_filename = 'req%d-%d-%d' % (i, j, k)
-                vnr_arrive = extract_network(path, third_filename)
-                children_of_second.append(vnr_arrive)
-            second_list.append(children_of_second)
-
-        queue_second.append(children_of_first)
-        queue_third.append(second_list)
+        # children_of_first = []
+        # second_list = []
+        # for j in range(5):
+        #     second_filename = 'req%d-%d' % (i, j)
+        #     second_req = extract_network(path, second_filename)
+        #     children_of_first.append(second_req)
+        #
+        #     children_of_second = []
+        #     for k in range(3):
+        #         third_filename = 'req%d-%d-%d' % (i, j, k)
+        #         vnr_arrive = extract_network(path, third_filename)
+        #         children_of_second.append(vnr_arrive)
+        #     second_list.append(children_of_second)
+        #
+        # queue_second.append(children_of_first)
+        # queue_third.append(second_list)
 
     # 按照时间（到达时间或离开时间）对这些虚拟网络请求从小到大进行排序
     queue.sort(key=lambda r: r.graph['time'])

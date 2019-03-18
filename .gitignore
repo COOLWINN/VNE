@@ -6,10 +6,8 @@ __pycache__/
 
 .idea
 venv/
-generated/
 networks/
 results/
 model_saved/
-fast.py
-comparison2/
 networks-tmp/
+fast.py

@@ -145,14 +145,6 @@ def make_req(index, min_res, max_res, node_num, time, duration):
     """生成虚拟网络请求文件"""
 
     network_name = 'req%s' % index
-
-    # # 生成GT-ITM配置文件
-    # spec_filename = 'spec-%s' % network_name
-    # with open(spec_dir + spec_filename, 'w') as f:
-    #     f.write("geo 1\n")
-    #     f.write("%d %d 3 0.5 0.2\n" % (node_num, SCALE))
-
-    # 生成虚拟网络文件
     generate_network(network_name, node_num, min_res, max_res, time=time, duration=duration)
 
 

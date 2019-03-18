@@ -174,7 +174,10 @@ class MCTS:
         current_node.set_state(init_state)
 
         for vn_id in range(vnr.number_of_nodes()):
+            print(current_node.get_state().get_max_expansion())
             current_node = self.search(current_node)
+            if current_node is None:
+                break
             sn_id = current_node.get_state().get_sn_id()
             if sn_id == -1:
                 break
@@ -196,6 +199,8 @@ class MCTS:
         for i in range(self.computation_budget):
             # 1. Find the best node to expand
             expand_node = self.tree_policy(node)
+            if expand_node is None:
+                break
 
             # 2. Random run to add node and get reward
             reward = self.default_policy(expand_node)
@@ -221,6 +226,8 @@ class MCTS:
 
             if node.is_all_expand():
                 node = self.best_child(node, True)
+                if node is None:
+                    break
             else:
                 next_node = self.expand(node)
                 return next_node
@@ -256,7 +263,7 @@ class MCTS:
         new_state = node.get_state().get_next_state_with_random_choice()
 
         # 首先它是一个可映射的底层节点
-        if new_state.get_sn_id != -1:
+        if new_state.get_sn_id() != -1:
             # 其次，它要和其他以扩展节点的Action不同，这里就是底层节点
             while new_state.get_sn_id() in tried_actions:
                 new_state = node.get_state().get_next_state_with_random_choice()

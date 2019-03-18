@@ -32,8 +32,9 @@ class Pnetwork():
 
         with tf.name_scope('loss'):
             self.tf_vt = tf.placeholder(tf.float32, [None, ], name="action_value")
+            self.input_y = tf.placeholder(tf.float32, [None, n_actions], name="input_y")
             # 计算损失函数loss(当前Action对应的概率的对数)
-            self.neg_log_prob = -tf.reduce_sum(tf.log(self.probs) * tf.one_hot(self.tf_acts, n_actions), axis=1)
+            self.neg_log_prob = -tf.reduce_sum(tf.log(self.probs) * self.input_y, axis=1)
             self.loss = tf.reduce_mean(self.neg_log_prob*self.tf_vt)
             # 获取策略网络中全部可训练的参数
             self.tvars = tf.trainable_variables()

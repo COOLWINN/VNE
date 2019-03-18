@@ -1,45 +1,29 @@
 import time
 from substrate import Substrate
 from maker import simulate_events
-from analysis import save_result
+from analysis import Analysis
 
 
 def main():
 
-    # Step1: create the substrate network and VNRs.
-    network_path = 'requests/'
-    sub_filename = 'sub.txt'
-    sub = Substrate(network_path, sub_filename)
-    event_queue = simulate_events(network_path, 2000)
+    # Step1: 读取底层网络和虚拟网络请求文件
+    network_files_dir = 'networks/'
+    sub_filename = 'sub-wm.txt'
+    sub = Substrate(network_files_dir, sub_filename)
+    event_queue1, event_queue2 = simulate_events(network_files_dir, 2000)
 
-    # Step2: choose an algorithm to run
+    # Step2: 选择映射算法
     algorithm = input("Please select an algorithm('grc','mcts','rl','mine'): ")
 
-    # Step3: handle requests
+    # Step3: 处理虚拟网络请求事件
     start = time.time()
-    for req in event_queue:
+    sub.handle(event_queue1, algorithm)
+    time_cost = time.time()-start
+    print(time_cost)
 
-        # the id of current request
-        req_id = req.graph['id']
-
-        if req.graph['type'] == 0:
-            """a request which is newly arrived"""
-
-            print("\nTry to map request%s: " % req_id)
-            sub.mapping(req, algorithm)
-
-        if req.graph['type'] == 1:
-            """a request which is ready to leave"""
-
-            if req_id in sub.mapped_info.keys():
-                print("\nRelease the resources which are occupied by request%s" % req_id)
-                sub.change_resource(req, 'release')
-
-    end = time.time()-start
-    print(end)
-
-    # Step4: output results
-    save_result(sub, '%s-VNE.txt' % algorithm)
+    # Step4: 输出映射结果文件
+    tool = Analysis()
+    tool.save_result(sub, '%s-VNE-0317.txt' % algorithm)
 
 
 if __name__ == '__main__':

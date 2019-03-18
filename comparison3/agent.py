@@ -57,7 +57,9 @@ class RL:
                     xs, acts = [], []
                     for vn_id in range(req.number_of_nodes()):
                         x = np.reshape(observation, [1, observation.shape[0], observation.shape[1], 1])
+
                         sn_id = self.choose_action(observation, sub_copy.net, req.nodes[vn_id]['cpu'], acts)
+
                         if sn_id == -1:
                             break
                         else:
@@ -71,17 +73,17 @@ class RL:
                     # end for,即一个VNR的全部节点映射全部尝试完毕
 
                     if len(node_map) == req.number_of_nodes():
+
                         reward, link_map = self.calculate_reward(sub_copy, req, node_map)
+
                         if reward != -1:
-
-                            ys = tf.one_hot(acts, self.n_actions)
                             epx = np.vstack(xs)
-                            epy = tf.Session().run(ys)
-
+                            epy = np.eye(self.n_actions)[acts]
                             # 返回损失函数值
                             loss_value = self.sess.run(self.loss,
                                                        feed_dict={self.tf_obs: epx,
                                                                   self.input_y: epy})
+
                             print("Success! The loss value is: %s" % loss_value)
                             values.append(loss_value)
 

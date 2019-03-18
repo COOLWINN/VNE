@@ -1,4 +1,4 @@
-from maker import simulate_events
+from maker import simulate_events_one
 from comparison1.grc import GRC
 from comparison2.mcts import MCTS
 from comparison3.agent import RL
@@ -17,7 +17,7 @@ def configure(sub, name):
 
     elif name == 'rl':
         training_set_path = 'comparison3/training_set/'
-        training_set = simulate_events(training_set_path, 1000)
+        training_set = simulate_events_one(training_set_path, 1000)
         rl = RL(sub=sub,
                 n_actions=sub.net.number_of_nodes(),
                 n_features=4,
@@ -28,8 +28,8 @@ def configure(sub, name):
         return rl
 
     else:
-        pg = PolicyGradient(n_actions=100,
-                            n_features=7,
+        pg = PolicyGradient(action_num=sub.net.number_of_nodes(),
+                            feature_num=7,
                             learning_rate=0.02,
                             reward_decay=0.95,
                             episodes=50)

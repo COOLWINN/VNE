@@ -7,17 +7,16 @@ from .model import Pnetwork
 
 class PolicyGradient:
 
-    def __init__(self, n_actions, n_features, learning_rate, reward_decay, episodes):
-        self.n_actions = n_actions
-        self.n_features = n_features
-        self.lr = learning_rate
+    def __init__(self, action_num, feature_num, learning_rate, reward_decay, episodes):
+        self.action_num = action_num
+        self.p_network = Pnetwork(action_num, feature_num, learning_rate)
         self.gamma = reward_decay
         self.episodes = episodes
         self.ep_obs, self.ep_as, self.ep_rs = [], [], []
-        self.p_network = Pnetwork(n_actions, n_features, learning_rate)
         self.sess = tf.InteractiveSession()
 
-    def run(self, sub, vnr):
+    def train(self, sub, vnr):
+        """通过蒙特卡洛采样不断尝试映射该虚拟网络请求，以获得效果最佳的策略网络"""
 
         # 初始化环境
         env = MyEnv(sub.net, vnr)
@@ -48,21 +47,29 @@ class PolicyGradient:
                 reward = self.calculate_reward(sub, vnr, tmp_node_map)
                 if reward != -1:
                     vt = self.learn(self.p_network, reward)
-                    print(vt)
 
+        print("\nFinish training!\n")
+        return env
+
+    def run(self, sub, vnr):
+        """使用训练好的策略网络映射虚拟节点"""
+
+        env = self.train(sub, vnr)
         observation = env.reset()
         node_map = {}
         chosen_nodes = []
         for count in range(vnr.number_of_nodes()):
-            action = self.choose_max_action(self.p_network, observation, sub.net, vnr.nodes[count]['cpu'], chosen_nodes)
+            action = self.choose_best_action(self.p_network, observation, sub.net, vnr.nodes[count]['cpu'], chosen_nodes)
             if action == -1:
                 break
             else:
+                if sub.net.nodes[action]['cpu_remain'] < vnr.nodes[count]['cpu']:
+                    pass
                 observation_, _, done, info = env.step(action)
                 chosen_nodes.append(action)
                 node_map.update({count: action})
 
-                # after each step, we should update the observation
+                # 每执行一个step，都需要更新环境状态
                 observation = observation_
 
         return node_map
@@ -86,15 +93,22 @@ class PolicyGradient:
             action = np.random.choice(candidate_action, p=candidate_prob)
             return action
 
-    def choose_max_action(self, model, observation, sub, current_node_cpu, chosen_nodes):
+    def choose_best_action(self, model, observation, sub, current_node_cpu, chosen_nodes):
 
         x = np.reshape(observation, [1, observation.shape[0], observation.shape[1], 1])
         tf_prob = self.sess.run(model.probs, feed_dict={model.tf_obs: x})
         filter_prob = tf_prob.ravel()
+
         for index, score in enumerate(filter_prob):
-            if index in chosen_nodes or sub.nodes[index]['cpu_remain'] < current_node_cpu:
+            if index in chosen_nodes:
+                filter_prob[index] = 0.0
+        candidate = np.argmax(filter_prob)
+
+        for index, score in enumerate(filter_prob):
+            if sub.nodes[index]['cpu_remain'] < current_node_cpu:
                 filter_prob[index] = 0.0
         action = np.argmax(filter_prob)
+
         if filter_prob[action] == 0.0:
             return -1
         else:
@@ -109,11 +123,16 @@ class PolicyGradient:
     def learn(self, model, reward):
         saver = tf.train.Saver()
         discounted_ep_rs_norm = self._discount_and_norm_rewards(reward)
+        epy = np.eye(self.action_num)[self.ep_as]
         # 返回求解梯度
         tf_grad = self.sess.run(model.newGrads,
                                 feed_dict={model.tf_obs: self.ep_obs,
-                                           model.tf_acts: self.ep_as,
+                                           model.input_y: epy,
                                            model.tf_vt: discounted_ep_rs_norm})
+        # tf_grad = self.sess.run(model.newGrads,
+        #                         feed_dict={model.tf_obs: self.ep_obs,
+        #                                    model.tf_acts: self.ep_as,
+        #                                    model.tf_vt: discounted_ep_rs_norm})
         # 创建存储参数梯度的缓冲器
         grad_buffer = self.sess.run(model.tvars)
         # 将获得的梯度累加到gradBuffer中
@@ -148,21 +167,11 @@ class PolicyGradient:
 
         link_map = sub.link_mapping(req, node_map)
         if len(link_map) == req.number_of_edges():
-            requested, occupied = 0, 0
-
-            # node resource
-            for vn_id, sn_id in node_map.items():
-                node_resource = req.nodes[vn_id]['cpu']
-                occupied += node_resource
-                requested += node_resource
-
+            reward = 0
             # link resource
             for vl, path in link_map.items():
                 link_resource = req[vl[0]][vl[1]]['bw']
-                requested += link_resource
-                occupied += link_resource * (len(path) - 1)
-
-            reward = occupied - requested
+                reward += link_resource * (len(path) - 2)
 
             return reward + 0.01
         else:

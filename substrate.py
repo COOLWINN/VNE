@@ -2,6 +2,7 @@ import networkx as nx
 from maker import extract_network
 from config import configure
 from evaluation import Evaluation
+from itertools import islice
 
 
 def calculate_adjacent_bw(graph, u, kind='bw'):
@@ -13,6 +14,11 @@ def calculate_adjacent_bw(graph, u, kind='bw'):
     return bw_sum
 
 
+# k最短路径
+def k_shortest_path(G, source, target, k=5):
+    return list(islice(nx.shortest_simple_paths(G, source, target), k))
+
+
 class Substrate:
 
     def __init__(self, path, filename):
@@ -20,6 +26,75 @@ class Substrate:
         self.agent = None
         self.mapped_info = {}
         self.evaluation = Evaluation(self.net)
+        self.no_solution = False
+
+    def set_topology(self, graph):
+        self.net = graph
+
+    def handle(self, queue, algorithm):
+
+        for req in queue:
+
+            # the id of current request
+            req_id = req.graph['id']
+
+            if req.graph['type'] == 0:
+                """a request which is newly arrived"""
+
+                print("\nTry to map request%s: " % req_id)
+                if self.mapping(req, algorithm):
+                    print("Success!")
+                    # 子虚拟网络请求的映射
+                    # print("\nTry to map its child request: ")
+                    # total = total + 4
+                    # upper_req = event_queue2[req_id]
+                    # sub2 = copy.deepcopy(backup)
+                    # sub2.set_topology(req)
+                    # for i in range(4):
+                    #     if sub2.upper_mapping(upper_req, "grc", sub):
+                    #         print("Success!")
+                    #         success = success+1
+
+            if req.graph['type'] == 1:
+                """a request which is ready to leave"""
+
+                if req_id in self.mapped_info.keys():
+                    print("\nRelease the resources which are occupied by request%s" % req_id)
+                    self.change_resource(req, 'release')
+
+    def upper_mapping(self, vnr, algorithm, sub):
+        """only for child virtual network requests"""
+
+        # 如果刚开始映射，那么需要对所选用的算法进行配置
+        if self.agent is None:
+            self.agent = configure(self, algorithm)
+
+        node_map = self.agent.run_run(self, vnr, sub)
+
+        if len(node_map) == vnr.number_of_nodes():
+            link_map = {}
+            for vLink in vnr.edges:
+                vn_from = vLink[0]
+                vn_to = vLink[1]
+                sn_from = node_map[vn_from]
+                sn_to = node_map[vn_to]
+                self.no_solution = True
+                if nx.has_path(self.net, source=sn_from, target=sn_to):
+                    for path in k_shortest_path(self.net, sn_from, sn_to):
+                        if self.get_path_capacity(path) >= vnr[vn_from][vn_to]['bw']:
+                            link_map.update({vLink: path})
+                            self.no_solution = False
+                            break
+                        else:
+                            continue
+
+            if len(link_map) == vnr.number_of_edges():
+                self.change_resource(vnr, 'allocate')
+                return True
+            else:
+                return False
+        else:
+            return False
 
     def mapping(self, vnr, node_algorithm):
         """two phrases:node mapping and link mapping"""
@@ -37,10 +112,13 @@ class Substrate:
                 self.mapped_info.update({vnr.graph['id']: (node_map, link_map)})
                 self.change_resource(vnr, 'allocate')
                 print("Success!")
+                return True
             else:
-                print("Fail at the stage of link mapping!")
+                print("Failed to map all links!")
+                return False
         else:
-            print("Fail at the stage of node mapping!")
+            print("Failed to map all nodes!")
+            return False
 
     def node_mapping(self, vnr, algorithm):
         """求解节点映射问题"""
@@ -67,7 +145,7 @@ class Substrate:
             sn_from = node_map[vn_from]
             sn_to = node_map[vn_to]
             if nx.has_path(self.net, source=sn_from, target=sn_to):
-                for path in nx.all_shortest_paths(self.net, source=sn_from, target=sn_to):
+                for path in k_shortest_path(self.net, sn_from, sn_to):
                     if self.get_path_capacity(path) >= vnr[vn_from][vn_to]['bw']:
                         link_map.update({vLink: path})
                         break

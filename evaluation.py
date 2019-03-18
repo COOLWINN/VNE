@@ -10,9 +10,9 @@ class Evaluation:
         # 总成本
         self.total_cost = 0
         # 平均节点利用率
-        self.ans = 0
+        self.average_node_stress = 0
         # 平均链路利用率
-        self.als = 0
+        self.average_link_stress = 0
         # 每个时刻对应的性能指标元组（请求接受率、平均收益、平均成本、收益成本比、平均节点利用率、平均链路利用率）
         self.metrics = {}
 
@@ -21,14 +21,14 @@ class Evaluation:
         self.total_accepted += 1
         self.total_revenue += self.calcualte_revenue(req)
         self.total_cost += self.calculate_cost(req, link_map)
-        self.ans += self.calculate_node_stress()
-        self.als += self.calculate_link_stress()
+        self.average_node_stress += self.calculate_ans()
+        self.average_link_stress += self.calculate_als()
         self.metrics.update({req.graph['time']: (self.total_accepted / self.total_arrived,
                                                  self.total_revenue,
                                                  self.total_cost,
                                                  self.total_revenue / self.total_cost,
-                                                 self.ans / self.total_arrived,
-                                                 self.als / self.total_arrived)})
+                                                 self.average_node_stress / self.total_arrived,
+                                                 self.average_link_stress / self.total_arrived)})
 
     def calcualte_revenue(self, req):
         """"映射收益"""
@@ -50,7 +50,7 @@ class Evaluation:
             cost += link_resource * (len(path) - 1)
         return cost
 
-    def calculate_node_stress(self):
+    def calculate_ans(self):
         """节点资源利用率"""
         node_stress = 0
         for i in range(self.graph.number_of_nodes()):
@@ -58,7 +58,7 @@ class Evaluation:
         node_stress /= self.graph.number_of_nodes()
         return node_stress
 
-    def calculate_link_stress(self):
+    def calculate_als(self):
         """链路资源利用率"""
         link_stress = 0
         for vl in self.graph.edges:

@@ -10,4 +10,4 @@ networks/
 results/
 model_saved/
 networks-tmp/
-fast.py
+requests/

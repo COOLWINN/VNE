@@ -31,7 +31,7 @@ class Substrate:
     def set_topology(self, graph):
         self.net = graph
 
-    def handle(self, queue, algorithm):
+    def handle(self, queue, algorithm, arg=0):
 
         for req in queue:
 
@@ -42,7 +42,7 @@ class Substrate:
                 """a request which is newly arrived"""
 
                 print("\nTry to map request%s: " % req_id)
-                if self.mapping(req, algorithm):
+                if self.mapping(req, algorithm, arg):
                     print("Success!")
                     # 子虚拟网络请求的映射
                     # print("\nTry to map its child request: ")
@@ -96,13 +96,13 @@ class Substrate:
         else:
             return False
 
-    def mapping(self, vnr, node_algorithm):
+    def mapping(self, vnr, node_algorithm, arg):
         """two phrases:node mapping and link mapping"""
 
         self.evaluation.total_arrived += 1
 
         # mapping virtual nodes
-        node_map = self.node_mapping(vnr, node_algorithm)
+        node_map = self.node_mapping(vnr, node_algorithm, arg)
 
         if len(node_map) == vnr.number_of_nodes():
             # mapping virtual links
@@ -120,14 +120,14 @@ class Substrate:
             print("Failed to map all nodes!")
             return False
 
-    def node_mapping(self, vnr, algorithm):
+    def node_mapping(self, vnr, algorithm, arg):
         """求解节点映射问题"""
 
         print("node mapping...")
 
         # 如果刚开始映射，那么需要对所选用的算法进行配置
         if self.agent is None:
-            self.agent = configure(self, algorithm)
+            self.agent = configure(self, algorithm, arg)
 
         # 使用指定的算法进行节点映射并得到节点映射集合
         node_map = self.agent.run(self, vnr)

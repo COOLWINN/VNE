@@ -1,11 +1,11 @@
 from maker import simulate_events_one
 from comparison1.grc import GRC
 from comparison2.mcts import MCTS
-from comparison3.agent import RL
-from mine.reinforce import PolicyGradient
+from comparison3.reinforce import RL
+from mine.agent import PolicyGradient
 
 
-def configure(sub, name):
+def configure(sub, name, arg):
 
     if name == 'grc':
         grc = GRC(damping_factor=0.9, sigma=1e-6)
@@ -22,7 +22,7 @@ def configure(sub, name):
                 n_actions=sub.net.number_of_nodes(),
                 n_features=4,
                 learning_rate=0.05,
-                num_epoch=10,
+                num_epoch=arg,
                 batch_size=100)
         rl.train(training_set)
         return rl
@@ -32,5 +32,5 @@ def configure(sub, name):
                             feature_num=7,
                             learning_rate=0.02,
                             reward_decay=0.95,
-                            episodes=50)
+                            episodes=arg)
         return pg

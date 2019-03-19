@@ -1,6 +1,6 @@
 import time
 from substrate import Substrate
-from maker import simulate_events
+from maker import simulate_events_one
 from analysis import Analysis
 
 
@@ -10,10 +10,10 @@ def main():
     network_files_dir = 'networks/'
     sub_filename = 'sub-wm.txt'
     sub = Substrate(network_files_dir, sub_filename)
-    event_queue1, event_queue2 = simulate_events(network_files_dir, 2000)
+    event_queue1 = simulate_events_one(network_files_dir, 2000)
 
     # Step2: 选择映射算法
-    algorithm = input("Please select an algorithm('grc','mcts','rl','mine'): ")
+    algorithm = 'grc'
 
     # Step3: 处理虚拟网络请求事件
     start = time.time()
@@ -23,7 +23,7 @@ def main():
 
     # Step4: 输出映射结果文件
     tool = Analysis()
-    tool.save_result(sub, '%s-VNE-0317.txt' % algorithm)
+    tool.save_result(sub, '%s-VNE-0318.txt' % algorithm)
 
 
 if __name__ == '__main__':

@@ -24,7 +24,7 @@ class PolicyGradient:
         self.sess.run(tf.global_variables_initializer())
 
         for i_episode in range(self.episodes):
-
+            print(i_episode)
             # 重置VNE环境
             observation = env.reset()
 

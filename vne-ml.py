@@ -25,7 +25,7 @@ def main():
 
     # Step4: 输出映射结果文件
     tool = Analysis()
-    tool.save_result(algorithm.evaluation, '%s-VNE-0320-%s.txt' % (algorithm, node_arg))
+    tool.save_result(algorithm.evaluation, '%s-VNE-0320-%s.txt' % (name, node_arg))
 
 
 if __name__ == '__main__':

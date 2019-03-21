@@ -8,11 +8,11 @@ def main():
     # Step1: 读取底层网络和虚拟网络请求文件
     network_files_dir = 'networks-tmp/'
     sub_filename = 'sub-wm.txt'
-    sub, queue1, queue2 = simulate_events(network_files_dir, sub_filename, 400, 0)
+    sub, queue1, queue2 = simulate_events(network_files_dir, sub_filename, 400, 4)
 
     # Step2: 配置映射算法
     name = 'mcts'
-    algorithm = Algorithm(name)
+    algorithm = Algorithm(name, link_arg=5)
     algorithm.configure(sub)
 
     # Step3: 处理虚拟网络请求事件

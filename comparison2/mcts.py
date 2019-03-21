@@ -2,8 +2,27 @@ import sys
 import math
 import random
 import copy
+import networkx as nx
+from itertools import islice
 
 LIMIT = -sys.maxsize
+
+
+def get_path_capacity(graph, path):
+    """找到一条路径中带宽资源最小的链路并返回其带宽资源值"""
+
+    bandwidth = 1000
+    head = path[0]
+    for tail in path[1:]:
+        if graph[head][tail]['bw_remain'] <= bandwidth:
+            bandwidth = graph[head][tail]['bw_remain']
+        head = tail
+    return bandwidth
+
+
+# k最短路径
+def k_shortest_path(G, source, target, k=5):
+    return list(islice(nx.shortest_simple_paths(G, source, target), k))
 
 
 class State:
@@ -19,11 +38,11 @@ class State:
         # 待映射的虚拟节点
         self.vn_id = -1
         # 选择的底层节点
-        self.sn_id = sub.net.number_of_nodes()
+        self.sn_id = sub.number_of_nodes()
         # 从开始到现在的映射记录
         self.chosen_ids = []
         # 可扩展的节点数
-        self.max_expansion = sub.net.number_of_nodes()
+        self.max_expansion = sub.number_of_nodes()
 
     def get_max_expansion(self):
         return self.max_expansion
@@ -59,10 +78,21 @@ class State:
         如果虚拟网络请求能够被成功映射，那么最终奖赏为收益减去成本；否则，最终奖赏为一个无穷小的值
         """
 
-        node_map = {}
+        node_map, link_map = {}, {}
         for i in range(self.vnr.number_of_nodes()):
             node_map.update({i: self.chosen_ids[i]})
-        link_map = self.sub.link_mapping(self.vnr, node_map)
+        for vLink in self.vnr.edges:
+            vn_from = vLink[0]
+            vn_to = vLink[1]
+            sn_from = node_map[vn_from]
+            sn_to = node_map[vn_to]
+            if nx.has_path(self.sub, source=sn_from, target=sn_to):
+                for path in k_shortest_path(self.sub, sn_from, sn_to, 1):
+                    if get_path_capacity(self.sub, path) >= self.vnr[vn_from][vn_to]['bw']:
+                        link_map.update({vLink: path})
+                        break
+                    else:
+                        continue
         if len(link_map) == self.vnr.number_of_edges():
             requested, occupied = 0, 0
 
@@ -85,9 +115,9 @@ class State:
         """针对下一个虚拟节点，随机选择一个可映射的底层节点"""
 
         actions = []
-        for i in range(self.sub.net.number_of_nodes()):
+        for i in range(self.sub.number_of_nodes()):
             if i not in self.chosen_ids and \
-                    self.sub.net.nodes[i]['cpu_remain'] >= self.vnr.nodes[self.vn_id + 1]['cpu']:
+                    self.sub.nodes[i]['cpu_remain'] >= self.vnr.nodes[self.vn_id + 1]['cpu']:
                 actions.append(i)
         self.max_expansion = len(actions)
         if self.max_expansion > 0:
@@ -174,7 +204,7 @@ class MCTS:
         current_node.set_state(init_state)
 
         for vn_id in range(vnr.number_of_nodes()):
-            print(current_node.get_state().get_max_expansion())
+            # print(current_node.get_state().get_max_expansion())
             current_node = self.search(current_node)
             if current_node is None:
                 break

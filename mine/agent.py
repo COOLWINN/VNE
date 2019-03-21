@@ -1,8 +1,26 @@
-import os
 import tensorflow as tf
 import numpy as np
 from mine.my_mdp import MyEnv
 from .model import Pnetwork
+from itertools import islice
+import networkx as nx
+
+
+def get_path_capacity(graph, path):
+    """找到一条路径中带宽资源最小的链路并返回其带宽资源值"""
+
+    bandwidth = 1000
+    head = path[0]
+    for tail in path[1:]:
+        if graph[head][tail]['bw_remain'] <= bandwidth:
+            bandwidth = graph[head][tail]['bw_remain']
+        head = tail
+    return bandwidth
+
+
+# k最短路径
+def k_shortest_path(G, source, target, k=5):
+    return list(islice(nx.shortest_simple_paths(G, source, target), k))
 
 
 class PolicyGradient:
@@ -19,12 +37,12 @@ class PolicyGradient:
         """通过蒙特卡洛采样不断尝试映射该虚拟网络请求，以获得效果最佳的策略网络"""
 
         # 初始化环境
-        env = MyEnv(sub.net, vnr)
+        env = MyEnv(sub, vnr)
 
         self.sess.run(tf.global_variables_initializer())
 
         for i_episode in range(self.episodes):
-            print(i_episode)
+            print('Iteration %s' % i_episode)
             # 重置VNE环境
             observation = env.reset()
 
@@ -32,7 +50,7 @@ class PolicyGradient:
 
             # 采样
             for count in range(vnr.number_of_nodes()):
-                action = self.choose_action(self.p_network, observation, sub.net, vnr.nodes[count]['cpu'])
+                action = self.choose_action(self.p_network, observation, sub, vnr.nodes[count]['cpu'])
                 if action == -1:
                     break
                 else:
@@ -59,11 +77,11 @@ class PolicyGradient:
         node_map = {}
         chosen_nodes = []
         for count in range(vnr.number_of_nodes()):
-            action = self.choose_best_action(self.p_network, observation, sub.net, vnr.nodes[count]['cpu'], chosen_nodes)
+            action = self.choose_best_action(self.p_network, observation, sub, vnr.nodes[count]['cpu'], chosen_nodes)
             if action == -1:
                 break
             else:
-                if sub.net.nodes[action]['cpu_remain'] < vnr.nodes[count]['cpu']:
+                if sub.nodes[action]['cpu_remain'] < vnr.nodes[count]['cpu']:
                     pass
                 observation_, _, done, info = env.step(action)
                 chosen_nodes.append(action)
@@ -121,7 +139,7 @@ class PolicyGradient:
         self.ep_rs.append(r)
 
     def learn(self, model, reward):
-        saver = tf.train.Saver()
+        # saver = tf.train.Saver()
         discounted_ep_rs_norm = self._discount_and_norm_rewards(reward)
         epy = np.eye(self.action_num)[self.ep_as]
         # 返回求解梯度
@@ -142,10 +160,10 @@ class PolicyGradient:
         self.sess.run(model.train_op,
                       feed_dict={model.kernel_grad: grad_buffer[0],
                                  model.biases_grad: grad_buffer[1]})
-        model_path = "model_saved/model.cptk"
-        if not os.path.exists(model_path):
-            os.makedirs(model_path)
-        saver.save(self.sess, model_path)
+        # model_path = "model_saved/model.cptk"
+        # if not os.path.exists(model_path):
+        #     os.makedirs(model_path)
+        # saver.save(self.sess, model_path)
 
         self.ep_obs, self.ep_as, self.ep_rs = [], [], []
         return discounted_ep_rs_norm
@@ -165,7 +183,19 @@ class PolicyGradient:
 
     def calculate_reward(self, sub, req, node_map):
 
-        link_map = sub.link_mapping(req, node_map)
+        link_map = {}
+        for vLink in req.edges:
+            vn_from = vLink[0]
+            vn_to = vLink[1]
+            sn_from = node_map[vn_from]
+            sn_to = node_map[vn_to]
+            if nx.has_path(sub, source=sn_from, target=sn_to):
+                for path in k_shortest_path(sub, sn_from, sn_to, 1):
+                    if get_path_capacity(sub, path) >= req[vn_from][vn_to]['bw']:
+                        link_map.update({vLink: path})
+                        break
+                    else:
+                        continue
         if len(link_map) == req.number_of_edges():
             reward = 0
             # link resource

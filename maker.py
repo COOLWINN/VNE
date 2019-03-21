@@ -12,7 +12,7 @@ TOTAL_TIME = 50000
 SCALE = 100
 
 # 仅与虚拟网络请求相关的参数
-DURATION_MEAN = 1000
+DURATION_MEAN = 2000
 MIN_DURATION = 250
 MAX_DISTANCE = 20
 
@@ -197,7 +197,7 @@ def make_batch_req(possion_mean, min_num_nodes, max_num_nodes, min_res, max_res)
 
 def extract_network(path, filename):
     """读取网络文件并生成networkx.Graph实例"""
-
+    mapped_info = {}
     node_id, link_id = 0, 0
 
     with open(path + filename) as f:
@@ -207,7 +207,7 @@ def extract_network(path, filename):
         """create a substrate network"""
 
         node_num, link_num = [int(x) for x in lines[0].split()]
-        graph = nx.Graph()
+        graph = nx.Graph(mapped_info=mapped_info)
         for line in lines[1: node_num + 1]:
             x, y, c = [float(x) for x in line.split()]
             graph.add_node(node_id, x_coordinate=x, y_coordinate=y, cpu=c, cpu_remain=c)
@@ -219,9 +219,8 @@ def extract_network(path, filename):
             link_id = link_id + 1
     else:
         """create a virtual network"""
-
         node_num, link_num, time, duration, max_dis = [int(x) for x in lines[0].split()]
-        graph = nx.Graph(type=0, time=time, duration=duration)
+        graph = nx.Graph(type=0, time=time, duration=duration, mapped_info=mapped_info)
         for line in lines[1:node_num + 1]:
             x, y, c = [float(x) for x in line.split()]
             graph.add_node(node_id, x_coordinate=x, y_coordinate=y, cpu=c, cpu_remain=c)
@@ -235,33 +234,34 @@ def extract_network(path, filename):
     return graph
 
 
-def simulate_events(path, number):
+def simulate_events(path, sub_filename, req_num, child_num):
     """读取number个虚拟网络及其自虚拟网络请求，构成底层虚拟网络请求事件队列和子虚拟网络请求事件队列"""
-
+    # 底层物理网络
+    sub = extract_network(path, sub_filename)
     # 第1层虚拟网络请求
-    queue = []
+    queue1 = []
     # 第2层虚拟网络请求
-    queue_second = []
+    queue2 = []
 
-    for i in range(number):
+    for i in range(req_num):
         filename = 'req%d.txt' % i
         req_arrive = extract_network(path, filename)
         req_arrive.graph['id'] = i
         req_leave = copy.deepcopy(req_arrive)
         req_leave.graph['type'] = 1
         req_leave.graph['time'] = req_arrive.graph['time'] + req_arrive.graph['duration']
-        queue.append(req_arrive)
-        queue.append(req_leave)
+        queue1.append(req_arrive)
+        queue1.append(req_leave)
 
-        children = []
-        for j in range(4):
+        for j in range(child_num):
             second_filename = 'req%d-%d.txt' % (i, j)
             second_req = extract_network(path, second_filename)
-            children.append(second_req)
-        queue_second.append(children)
+            second_req.graph['id'] = j
+            queue2.append(second_req)
+
     # 按照时间（到达时间或离开时间）对这些虚拟网络请求从小到大进行排序
-    queue.sort(key=lambda r: r.graph['time'])
-    return queue, queue_second
+    queue1.sort(key=lambda r: r.graph['time'])
+    return sub, queue1, queue2
 
 
 def simulate_events_one(path, number):
@@ -282,6 +282,18 @@ def simulate_events_one(path, number):
     return queue
 
 
+def get_path_capacity(sub, path):
+    """找到一条路径中带宽资源最小的链路并返回其带宽资源值"""
+
+    bandwidth = 1000
+    head = path[0]
+    for tail in path[1:]:
+        if sub[head][tail]['bw_remain'] <= bandwidth:
+            bandwidth = sub[head][tail]['bw_remain']
+        head = tail
+    return bandwidth
+
+
 if __name__ == '__main__':
 
     # 生成节点数为100，连通率为0.5的随机型物理网络
@@ -291,4 +303,4 @@ if __name__ == '__main__':
     # make_sub_ts(1, 3, 4, 8, 50, 100)
     #
     # # 平均每1000个时间单位内到达40个虚拟网络请求， 且虚拟节点数服从10~20的均匀分布，请求资源服从50~100的均匀分布
-    make_batch_req(40, 10, 20, 0, 50)
+    make_batch_req(8, 10, 20, 0, 50)

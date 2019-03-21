@@ -17,13 +17,15 @@ class Analysis:
                              'R_C': 'Long Term Revenue/Cost Ratio',
                              'node utilization': 'Average Node Utilization',
                              'link utilization': 'Average Link Utilization'}
+        self.lines = ['b-', 'r-', 'y-', 'g-', 'c-']
+        self.types = ['50', '60', '70', '80', '90', '100']
 
-    def save_result(self, sub, filename):
+    def save_result(self, evaluation, filename):
         """将一段时间内底层网络的性能指标输出到指定文件内"""
 
         filename = self.result_dir + filename
         with open(filename, 'w') as f:
-            for time, evaluation in sub.evaluation.metrics.items():
+            for time, evaluation in evaluation.metrics.items():
                 f.write("%-10s\t" % time)
                 f.write("%-20s\t%-20s\t%-20s\t%-20s\t%-20s\t%-20s\n" % evaluation)
 
@@ -73,6 +75,28 @@ class Analysis:
             # plt.savefig(self.result_dir + metric + '.png')
         plt.show()
 
+    def draw_result_mine(self):
+        """绘制实验结果图"""
+
+        results = []
+        for i in range(5):
+            epochs = (i+5) * 10
+            results.append(self.read_result('ml-VNE-0318-%s.txt' % epochs))
+
+        plt.figure()
+        for i in range(5):
+            x = results[i][0]
+            y = results[i][1]
+            plt.plot(x, y, self.lines[i], label=self.types[i])
+        plt.xlim([0, 50000])
+        plt.ylim([0.3, 0.7])
+        plt.xlabel("time", fontsize=12)
+        plt.ylabel("acceptance ratio", fontsize=12)
+        plt.title("Acceptance Ratio", fontsize=15)
+        plt.legend(loc='best', fontsize=12)
+        # plt.savefig(self.result_dir + metric + '.png')
+        plt.show()
+
     def draw_topology(self, graph, filename):
         """绘制拓扑图"""
 
@@ -83,4 +107,4 @@ class Analysis:
 
 if __name__ == '__main__':
     analysis = Analysis()
-    analysis.draw_result()
+    analysis.draw_result_mine()

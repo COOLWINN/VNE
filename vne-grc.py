@@ -1,29 +1,30 @@
 import time
-from substrate import Substrate
-from maker import simulate_events_one
+from maker import simulate_events
 from analysis import Analysis
+from algorithm import Algorithm
 
 
 def main():
 
     # Step1: 读取底层网络和虚拟网络请求文件
-    network_files_dir = 'networks/'
+    network_files_dir = 'networks-tmp/'
     sub_filename = 'sub-wm.txt'
-    sub = Substrate(network_files_dir, sub_filename)
-    event_queue1 = simulate_events_one(network_files_dir, 2000)
+    sub, queue1, queue2 = simulate_events(network_files_dir, sub_filename, 400, 4)
 
-    # Step2: 选择映射算法
-    algorithm = 'grc'
+    # Step2: 配置映射算法
+    name = 'grc'
+    algorithm = Algorithm(name, link_arg=5)
+    algorithm.configure(sub)
 
     # Step3: 处理虚拟网络请求事件
     start = time.time()
-    sub.handle(event_queue1, algorithm)
-    time_cost = time.time()-start
+    algorithm.handle(sub, queue1, queue2)
+    time_cost = time.time() - start
     print(time_cost)
 
     # Step4: 输出映射结果文件
     tool = Analysis()
-    tool.save_result(sub, '%s-VNE-0318.txt' % algorithm)
+    tool.save_result(algorithm.evaluation, '%s-VNE-0320.txt' % name)
 
 
 if __name__ == '__main__':

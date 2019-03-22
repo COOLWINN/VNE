@@ -1,14 +1,6 @@
 import networkx as nx
 import numpy as np
-
-
-def calculate_adjacent_bw(graph, u, kind='bw'):
-    """计算一个节点的相邻链路带宽和，默认为总带宽和，若计算剩余带宽资源和，需指定kind属性为bw-remain"""
-
-    bw_sum = 0
-    for v in graph.neighbors(u):
-        bw_sum += graph[u][v][kind]
-    return bw_sum
+from network import Network
 
 
 class EnvState:
@@ -50,7 +42,7 @@ class EnvState:
 
         tmp = []
         for u in range(self.sub.number_of_nodes()):
-            tmp.append(calculate_adjacent_bw(self.sub, u))
+            tmp.append(Network.calculate_adjacent_bw(self.sub, u))
 
         # normalization
         tmp = (tmp - np.min(tmp)) / (np.max(tmp) - np.min(tmp))

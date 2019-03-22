@@ -1,5 +1,5 @@
 import time
-from maker import simulate_events
+from network import Network
 from analysis import Analysis
 from algorithm import Algorithm
 
@@ -9,7 +9,8 @@ def main():
     # Step1: 读取底层网络和虚拟网络请求文件
     network_files_dir = 'networks-tmp/'
     sub_filename = 'sub-wm.txt'
-    sub, queue1, queue2 = simulate_events(network_files_dir, sub_filename, 400, 4)
+    networks = Network(network_files_dir)
+    sub, queue1, queue2 = networks.get_networks(sub_filename, 400, 0)
 
     # Step2: 选择映射算法
     name = 'rl'

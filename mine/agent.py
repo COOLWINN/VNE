@@ -2,25 +2,8 @@ import tensorflow as tf
 import numpy as np
 from mine.my_mdp import MyEnv
 from .model import Pnetwork
-from itertools import islice
 import networkx as nx
-
-
-def get_path_capacity(graph, path):
-    """找到一条路径中带宽资源最小的链路并返回其带宽资源值"""
-
-    bandwidth = 1000
-    head = path[0]
-    for tail in path[1:]:
-        if graph[head][tail]['bw_remain'] <= bandwidth:
-            bandwidth = graph[head][tail]['bw_remain']
-        head = tail
-    return bandwidth
-
-
-# k最短路径
-def k_shortest_path(G, source, target, k=5):
-    return list(islice(nx.shortest_simple_paths(G, source, target), k))
+from network import Network
 
 
 class PolicyGradient:
@@ -190,8 +173,8 @@ class PolicyGradient:
             sn_from = node_map[vn_from]
             sn_to = node_map[vn_to]
             if nx.has_path(sub, source=sn_from, target=sn_to):
-                for path in k_shortest_path(sub, sn_from, sn_to, 1):
-                    if get_path_capacity(sub, path) >= req[vn_from][vn_to]['bw']:
+                for path in Network.k_shortest_path(sub, sn_from, sn_to, 1):
+                    if Network.get_path_capacity(sub, path) >= req[vn_from][vn_to]['bw']:
                         link_map.update({vLink: path})
                         break
                     else:

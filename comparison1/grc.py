@@ -1,22 +1,8 @@
-import numpy as np
 import copy
-import networkx as nx
 import random
-from itertools import islice
-
-
-def calculate_adjacent_bw(graph, u, kind='bw'):
-    """计算一个节点的相邻链路带宽和，默认为总带宽和，若计算剩余带宽资源和，需指定kind属性为bw-remain"""
-
-    bw_sum = 0
-    for v in graph.neighbors(u):
-        bw_sum += graph[u][v][kind]
-    return bw_sum
-
-
-# k最短路径
-def k_shortest_path(G, source, target, k=5):
-    return list(islice(nx.shortest_simple_paths(G, source, target), k))
+import numpy as np
+import networkx as nx
+from network import Network
 
 
 class GRC:
@@ -125,7 +111,7 @@ class GRC:
                                 # 重映射
                                 if nx.has_path(tmp.net, source=new_one,
                                                    target=tmp.mapped_info[sub.net.graph['id']][0][neighbor]):
-                                    for path in k_shortest_path(tmp.net, new_one, tmp.mapped_info[sub.net.graph['id']][0][neighbor]):
+                                    for path in Network.k_shortest_path(tmp.net, new_one, tmp.mapped_info[sub.net.graph['id']][0][neighbor]):
                                         if tmp.get_path_capacity(path) >= sub.net[rand_id][neighbor]['bw']:
                                             # 更新该上层虚拟链路的映射
                                             tmp.mapped_info[sub.net.graph['id']][1][under_link] = path
@@ -174,7 +160,7 @@ class GRC:
         n = graph.number_of_nodes()
         for u in range(n):
             cpu_vector.append(graph.nodes[u][cpu_type])
-            sum_bw = calculate_adjacent_bw(graph, u, bw_type)
+            sum_bw = Network.calculate_adjacent_bw(graph, u, bw_type)
             for v in range(n):
                 if v in graph.neighbors(u):
                     m_matrix.append(graph[u][v][bw_type] / sum_bw)

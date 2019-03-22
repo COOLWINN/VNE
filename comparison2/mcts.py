@@ -3,26 +3,9 @@ import math
 import random
 import copy
 import networkx as nx
-from itertools import islice
+from network import Network
 
 LIMIT = -sys.maxsize
-
-
-def get_path_capacity(graph, path):
-    """找到一条路径中带宽资源最小的链路并返回其带宽资源值"""
-
-    bandwidth = 1000
-    head = path[0]
-    for tail in path[1:]:
-        if graph[head][tail]['bw_remain'] <= bandwidth:
-            bandwidth = graph[head][tail]['bw_remain']
-        head = tail
-    return bandwidth
-
-
-# k最短路径
-def k_shortest_path(G, source, target, k=5):
-    return list(islice(nx.shortest_simple_paths(G, source, target), k))
 
 
 class State:
@@ -87,8 +70,8 @@ class State:
             sn_from = node_map[vn_from]
             sn_to = node_map[vn_to]
             if nx.has_path(self.sub, source=sn_from, target=sn_to):
-                for path in k_shortest_path(self.sub, sn_from, sn_to, 1):
-                    if get_path_capacity(self.sub, path) >= self.vnr[vn_from][vn_to]['bw']:
+                for path in Network.k_shortest_path(self.sub, sn_from, sn_to, 1):
+                    if Network.get_path_capacity(self.sub, path) >= self.vnr[vn_from][vn_to]['bw']:
                         link_map.update({vLink: path})
                         break
                     else:

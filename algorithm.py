@@ -1,25 +1,10 @@
 import networkx as nx
 from evaluation import Evaluation
-from itertools import islice
 from comparison1.grc import GRC
 from comparison2.mcts import MCTS
 from comparison3.reinforce import RL
-from maker import simulate_events_one, get_path_capacity
 from mine.agent import PolicyGradient
-
-
-def calculate_adjacent_bw(graph, u, kind='bw'):
-    """计算一个节点的相邻链路带宽和，默认为总带宽和，若计算剩余带宽资源和，需指定kind属性为bw-remain"""
-
-    bw_sum = 0
-    for v in graph.neighbors(u):
-        bw_sum += graph[u][v][kind]
-    return bw_sum
-
-
-# k最短路径
-def k_shortest_path(G, source, target, k=5):
-    return list(islice(nx.shortest_simple_paths(G, source, target), k))
+from network import Network
 
 
 class Algorithm:
@@ -43,7 +28,8 @@ class Algorithm:
 
         elif self.name == 'rl':
             training_set_path = 'comparison3/training_set/'
-            training_set = simulate_events_one(training_set_path, 1000)
+            networks = Network(training_set_path)
+            training_set = networks.get_reqs(1000)
             rl = RL(sub=sub,
                     n_actions=sub.number_of_nodes(),
                     n_features=4,
@@ -143,8 +129,8 @@ class Algorithm:
             sn_from = node_map[vn_from]
             sn_to = node_map[vn_to]
             if nx.has_path(sub, source=sn_from, target=sn_to):
-                for path in k_shortest_path(sub, sn_from, sn_to, k):
-                    if get_path_capacity(sub, path) >= req[vn_from][vn_to]['bw']:
+                for path in Network.k_shortest_path(sub, sn_from, sn_to, k):
+                    if Network.get_path_capacity(sub, path) >= req[vn_from][vn_to]['bw']:
                         link_map.update({vLink: path})
                         break
                     else:
@@ -187,37 +173,37 @@ class Algorithm:
             mapped_info.pop(req_id)
             sub.graph['mapped_info'] = mapped_info
 
-    def upper_mapping(self, vnr, algorithm, sub):
-        """only for child virtual network requests"""
-        self.evaluation.total_arrived += 1
-        # 如果刚开始映射，那么需要对所选用的算法进行配置
-        if self.agent is None:
-            self.agent = configure(self, algorithm, arg=0)
-
-        node_map = self.agent.run_run(self, vnr, sub)
-
-        if len(node_map) == vnr.number_of_nodes():
-            link_map = {}
-            for vLink in vnr.edges:
-                vn_from = vLink[0]
-                vn_to = vLink[1]
-                sn_from = node_map[vn_from]
-                sn_to = node_map[vn_to]
-                self.no_solution = True
-                if nx.has_path(self.net, source=sn_from, target=sn_to):
-                    for path in k_shortest_path(self.net, sn_from, sn_to):
-                        if get_path_capacity(path) >= vnr[vn_from][vn_to]['bw']:
-                            link_map.update({vLink: path})
-                            self.no_solution = False
-                            break
-                        else:
-                            continue
-
-            if len(link_map) == vnr.number_of_edges():
-                self.mapped_info.update({vnr.graph['id']: (node_map, link_map)})
-                self.change_resource(vnr, 'allocate')
-                return True
-            else:
-                return False
-        else:
-            return False
+    # def upper_mapping(self, vnr, algorithm, sub):
+    #     """only for child virtual network requests"""
+    #     self.evaluation.total_arrived += 1
+    #     # 如果刚开始映射，那么需要对所选用的算法进行配置
+    #     if self.agent is None:
+    #         self.agent = configure(self, algorithm, arg=0)
+    #
+    #     node_map = self.agent.run_run(self, vnr, sub)
+    #
+    #     if len(node_map) == vnr.number_of_nodes():
+    #         link_map = {}
+    #         for vLink in vnr.edges:
+    #             vn_from = vLink[0]
+    #             vn_to = vLink[1]
+    #             sn_from = node_map[vn_from]
+    #             sn_to = node_map[vn_to]
+    #             self.no_solution = True
+    #             if nx.has_path(self.net, source=sn_from, target=sn_to):
+    #                 for path in k_shortest_path(self.net, sn_from, sn_to):
+    #                     if get_path_capacity(path) >= vnr[vn_from][vn_to]['bw']:
+    #                         link_map.update({vLink: path})
+    #                         self.no_solution = False
+    #                         break
+    #                     else:
+    #                         continue
+    #
+    #         if len(link_map) == vnr.number_of_edges():
+    #             self.mapped_info.update({vnr.graph['id']: (node_map, link_map)})
+    #             self.change_resource(vnr, 'allocate')
+    #             return True
+    #         else:
+    #             return False
+    #     else:
+    #         return False

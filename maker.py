@@ -280,27 +280,3 @@ def simulate_events_one(path, number):
     # 按照时间（到达时间或离开时间）对这些虚拟网络请求从小到大进行排序
     queue.sort(key=lambda r: r.graph['time'])
     return queue
-
-
-def get_path_capacity(sub, path):
-    """找到一条路径中带宽资源最小的链路并返回其带宽资源值"""
-
-    bandwidth = 1000
-    head = path[0]
-    for tail in path[1:]:
-        if sub[head][tail]['bw_remain'] <= bandwidth:
-            bandwidth = sub[head][tail]['bw_remain']
-        head = tail
-    return bandwidth
-
-
-if __name__ == '__main__':
-
-    # 生成节点数为100，连通率为0.5的随机型物理网络
-    make_sub_wm(100, 50, 100)
-
-    # # 生成节点数为1×4×(1+3×8)=100，连通率为0.5的Transit-Stub型物理网络
-    # make_sub_ts(1, 3, 4, 8, 50, 100)
-    #
-    # # 平均每1000个时间单位内到达40个虚拟网络请求， 且虚拟节点数服从10~20的均匀分布，请求资源服从50~100的均匀分布
-    make_batch_req(8, 10, 20, 0, 50)

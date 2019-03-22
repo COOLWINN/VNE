@@ -3,15 +3,7 @@ from gym import spaces
 import copy
 import networkx as nx
 import numpy as np
-
-
-def calculate_adjacent_bw(graph, u, kind='bw'):
-    """计算一个节点的相邻链路带宽和，默认为总带宽和，若计算剩余带宽资源和，需指定kind属性为bw-remain"""
-
-    bw_sum = 0
-    for v in graph.neighbors(u):
-        bw_sum += graph[u][v][kind]
-    return bw_sum
+from network import Network
 
 
 class Env(gym.Env):
@@ -43,10 +35,10 @@ class Env(gym.Env):
         self.count = self.count + 1
         cpu_remain, bw_all_remain, avg_dst = [], [], []
         for u in range(self.n_action):
-            adjacent_bw = calculate_adjacent_bw(self.sub, u, 'bw_remain')
+            adjacent_bw = Network.calculate_adjacent_bw(self.sub, u, 'bw_remain')
             if u == action:
                 self.sub.nodes[action]['cpu_remain'] -= self.vnr.nodes[self.count]['cpu']
-                adjacent_bw -= calculate_adjacent_bw(self.vnr, self.count)
+                adjacent_bw -= Network.calculate_adjacent_bw(self.vnr, self.count)
             cpu_remain.append(self.sub.nodes[u]['cpu_remain'])
             bw_all_remain.append(adjacent_bw)
 
@@ -73,7 +65,7 @@ class Env(gym.Env):
         cpu_remain, bw_all_remain = [], []
         for u in range(self.n_action):
             cpu_remain.append(self.sub.nodes[u]['cpu_remain'])
-            bw_all_remain.append(calculate_adjacent_bw(self.sub, u, 'bw_remain'))
+            bw_all_remain.append(Network.calculate_adjacent_bw(self.sub, u, 'bw_remain'))
 
         cpu_remain = (cpu_remain - np.min(cpu_remain)) / (np.max(cpu_remain) - np.min(cpu_remain))
         bw_all_remain = (bw_all_remain - np.min(bw_all_remain)) / (np.max(bw_all_remain) - np.min(bw_all_remain))

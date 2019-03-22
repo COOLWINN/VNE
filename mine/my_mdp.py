@@ -3,15 +3,7 @@ from gym import spaces
 import copy
 import numpy as np
 from .state import EnvState
-
-
-def calculate_adjacent_bw(graph, u, kind='bw'):
-    """计算一个节点的相邻链路带宽和，默认为总带宽和，若计算剩余带宽资源和，需指定kind属性为bw-remain"""
-
-    bw_sum = 0
-    for v in graph.neighbors(u):
-        bw_sum += graph[u][v][kind]
-    return bw_sum
+from network import Network
 
 
 class MyEnv(gym.Env):
@@ -30,10 +22,10 @@ class MyEnv(gym.Env):
         self.count = self.count + 1
         node_remain, bw_all_remain = [], []
         for u in range(self.action_num):
-            adjacent_bw = calculate_adjacent_bw(self.sub, u, 'bw_remain')
+            adjacent_bw = Network.calculate_adjacent_bw(self.sub, u, 'bw_remain')
             if u == action:
                 self.sub.nodes[action]['cpu_remain'] -= self.vnr.nodes[self.count]['cpu']
-                adjacent_bw -= calculate_adjacent_bw(self.vnr, self.count)
+                adjacent_bw -= Network.calculate_adjacent_bw(self.vnr, self.count)
             node_remain.append(self.sub.nodes[u]['cpu_remain'])
             bw_all_remain.append(adjacent_bw)
         node_remain = (node_remain - np.min(node_remain)) / (np.max(node_remain) - np.min(node_remain))

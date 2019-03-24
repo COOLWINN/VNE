@@ -1,5 +1,6 @@
 import random
 import math
+import os
 import numpy as np
 
 # 仿真时间
@@ -17,13 +18,15 @@ MAX_DISTANCE = 20
 class Constructor:
     def __init__(self, path):
         self.network_files_dir = path
+        if not os.path.exists(self.network_files_dir):
+            os.makedirs(self.network_files_dir)
         self.spec_dir = 'generated/spec/'
         self.alt_dir = 'generated/alt/'
 
     def make_sub_wm(self, node_num, min_res, max_res):
         """生成物理网络文件（基于waxman随机型网络模型）"""
         network_name = 'sub-wm'
-        self.generate_network(network_name, node_num, min_res, max_res)
+        self.generate_network_file(network_name, node_num, min_res, max_res)
 
     # transits： transit域数量
     # stubs: 每个transit节点连接的stub域数量
@@ -36,13 +39,13 @@ class Constructor:
 
         network_name = 'sub-ts'
         node_num = transits * transit_nodes * (1 + stubs * stub_nodes)
-        self.generate_network(network_name, node_num, min_res, max_res, transit_nodes=transit_nodes)
+        self.generate_network_file(network_name, node_num, min_res, max_res, transit_nodes=transit_nodes)
 
     def make_req(self, index, min_res, max_res, node_num, time, duration):
         """生成虚拟网络请求文件"""
 
         network_name = 'req%s' % index
-        self.generate_network(network_name, node_num, min_res, max_res, time=time, duration=duration)
+        self.generate_network_file(network_name, node_num, min_res, max_res, time=time, duration=duration)
 
     # possion_mean：虚拟网络请求的到达服从泊松分布，且平均每1000个时间单位内到达的数量为possion_mean个
     # 虚拟节点数量服从[min_num_nodes, max_num_nodes]的均匀分布
@@ -87,9 +90,9 @@ class Constructor:
             for j in range(4):
                 j_node_amount = random.randint(2, min_num_nodes - 1)
                 index = "%d-%d" % (i, j)
-                self.make_req(index, 0, max_res * 0.5, j_node_amount, time, duration)
+                self.make_req(index, 0, min_res, j_node_amount, time+j+1, duration)
 
-    def generate_network(self, network_name, node_num, min_res, max_res, time=0, duration=0, transit_nodes=0):
+    def generate_network_file(self, network_name, node_num, min_res, max_res, time=0, duration=0, transit_nodes=0):
         """生成网络文件"""
 
         # 读取alt文件
@@ -157,7 +160,7 @@ class Constructor:
 
 if __name__ == '__main__':
 
-    constructor = Constructor('networks-tmp/')
+    constructor = Constructor('networks-0322/')
 
     # 生成节点数为100，连通率为0.5的随机型物理网络
     constructor.make_sub_wm(100, 50, 100)
@@ -166,4 +169,4 @@ if __name__ == '__main__':
     # make_sub_ts(1, 3, 4, 8, 50, 100)
 
     # 平均每1000个时间单位内到达40个虚拟网络请求， 且虚拟节点数服从10~20的均匀分布，请求资源服从50~100的均匀分布
-    constructor.make_batch_req(8, 10, 20, 0, 50)
+    constructor.make_batch_req(8, 10, 20, 25, 50)

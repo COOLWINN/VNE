@@ -9,7 +9,7 @@ class Analysis:
         self.result_dir = 'results/'
         if not os.path.exists(self.result_dir):
             os.makedirs(self.result_dir)
-        self.algorithms = ['grc-VNE', 'mcts-VNE', 'rl-VNE', 'ml-VNE-single']
+        self.algorithm_names = ['GRC-VNE', 'MCTS-VNE', 'RL-VNE', 'ML-VNE']
         self.line_types = ['b:', 'r--', 'y-.', 'g-']
         self.metric_names = {'acceptance ratio': 'Acceptance Ratio',
                              'average revenue': 'Long Term Average Revenue',
@@ -50,21 +50,21 @@ class Analysis:
 
         return t, acceptance, revenue, cost, r_to_c, node_stress, link_stress
 
-    def draw_result(self):
+    def draw_result_all(self):
         """绘制实验结果图"""
 
         results = []
-        for alg in self.algorithms:
+        for alg in self.algorithm_names:
             results.append(self.read_result(self.result_dir + alg + '-new.txt'))
 
         index = 0
         for metric, title in self.metric_names.items():
             index += 1
             plt.figure()
-            for alg_id in range(len(self.algorithms)):
+            for alg_id in range(len(self.algorithm_names)):
                 x = results[alg_id][0]
                 y = results[alg_id][index]
-                plt.plot(x, y, self.line_types[alg_id], label=self.algorithms[alg_id])
+                plt.plot(x, y, self.line_types[alg_id], label=self.algorithm_names[alg_id])
             plt.xlim([0, 50000])
             if metric == 'acceptance ratio' or metric == 'node utilization' or metric == 'link utilization':
                 plt.ylim([0, 1])
@@ -97,8 +97,19 @@ class Analysis:
         # plt.savefig(self.result_dir + metric + '.png')
         plt.show()
 
+    def draw_loss(self, loss_filename):
+        """绘制loss变化趋势图"""
+
+        with open(self.result_dir + loss_filename) as f:
+            lines = f.readlines()
+        loss = []
+        for line in lines[1:]:
+            loss.append(float(line))
+        plt.plot(loss)
+        plt.show()
+
     def draw_topology(self, graph, filename):
-        """绘制拓扑图"""
+        """绘制网络拓扑图"""
 
         nx.draw(graph, with_labels=False, node_color='black', edge_color='gray', node_size=50)
         plt.savefig(self.result_dir + filename + '.png')

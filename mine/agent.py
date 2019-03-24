@@ -14,7 +14,7 @@ class PolicyGradient:
         self.gamma = reward_decay
         self.episodes = episodes
         self.ep_obs, self.ep_as, self.ep_rs = [], [], []
-        self.sess = tf.InteractiveSession()
+        self.sess = tf.Session()
 
     def train(self, sub, vnr):
         """通过蒙特卡洛采样不断尝试映射该虚拟网络请求，以获得效果最佳的策略网络"""

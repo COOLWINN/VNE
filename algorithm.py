@@ -62,14 +62,17 @@ class Algorithm:
                     print("Success!")
                     # 子虚拟网络请求的映射
                     i = 0
+                    child_algorithm = Algorithm('mcts', link_arg=5)
+                    child_algorithm.configure(req)
                     for child in queue2[req_id*4:req_id*4+4]:
                         print("\nTry to map its child request %s: " % i)
                         total = total + 1
                         i = i+1
                         self.evaluation.total_arrived += 1
                         # if tmp.upper_mapping(child, 'grc', self):
-                        if self.mapping(req, child):
+                        if child_algorithm.mapping(req, child):
                             print("Child request %s is mapped successfully!" % i)
+                            self.evaluation.collect(child)
                             success = success + 1
                         else:
                             print("Failure")
@@ -79,8 +82,10 @@ class Algorithm:
                 if req_id in sub.graph['mapped_info'].keys():
                     print("\nRelease the resources which are occupied by request%s" % req_id)
                     self.change_resource(sub, req, 'release')
-        print(total)
-        print(success)
+
+        print("accepted requests: %s" % str(self.evaluation.total_accepted-success))
+        print("arrived child requests: %s" % total)
+        print("accepted child requests: %s" % success)
 
     def mapping(self, sub, req):
         """two phrases:node mapping and link mapping"""
@@ -165,7 +170,7 @@ class Algorithm:
 
         if instruction == 'allocate':
             # 增加实验结果
-            self.evaluation.add(req, link_map)
+            self.evaluation.collect(req, link_map)
 
         if instruction == 'release':
             # 移除相应的映射信息

@@ -8,7 +8,7 @@ class Network:
         self.files_dir = path
 
     def get_networks(self, sub_filename, req_num, child_req_num=0):
-        """读取number个虚拟网络及其自虚拟网络请求，构成底层虚拟网络请求事件队列和子虚拟网络请求事件队列"""
+        """读取 req_num 个虚拟网络及 req_num*child_num 个子虚拟网络请求，构成底层虚拟网络请求事件队列和子虚拟网络请求事件队列"""
         # 底层物理网络
         sub = self.read_network_file(sub_filename)
         # 第1层虚拟网络请求

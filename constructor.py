@@ -11,7 +11,9 @@ SCALE = 100
 
 # 仅与虚拟网络请求相关的参数
 DURATION_MEAN = 1000
+DURATION_MEAN_SECOND = 1000
 MIN_DURATION = 250
+MIN_DURATION_SECOND = 250
 MAX_DISTANCE = 20
 
 
@@ -79,10 +81,11 @@ class Constructor:
             time = start + ((count + 1) / (req_num_interval + 1)) * interval
             duration = MIN_DURATION + int(-math.log(random.random()) * (DURATION_MEAN - MIN_DURATION))
 
-            if random.random() <= 0.4:
-                node_amount = random.randint(min_num_nodes, max_num_nodes)
-            else:
-                node_amount = random.randint(min_num_nodes, (min_num_nodes + max_num_nodes) / 2)
+            node_amount = random.randint(min_num_nodes, max_num_nodes)
+            # if random.random() <= 0.4:
+            #     node_amount = random.randint(min_num_nodes, max_num_nodes)
+            # else:
+            #     node_amount = random.randint(min_num_nodes, (min_num_nodes + max_num_nodes) / 2)
 
             self.make_req(i, min_res, max_res, node_amount, time, duration)
 
@@ -90,7 +93,9 @@ class Constructor:
             for j in range(4):
                 j_node_amount = random.randint(2, min_num_nodes - 1)
                 index = "%d-%d" % (i, j)
-                self.make_req(index, 0, min_res, j_node_amount, time+j+1, duration)
+                time2 = time + int(duration*(j+1)/10)
+                duration2 = MIN_DURATION_SECOND + int(-math.log(random.random()) * (DURATION_MEAN_SECOND - MIN_DURATION_SECOND))
+                self.make_req(index, 0, min_res, j_node_amount, time2, duration2)
 
     def generate_network_file(self, network_name, node_num, min_res, max_res, time=0, duration=0, transit_nodes=0):
         """生成网络文件"""
@@ -126,31 +131,33 @@ class Constructor:
                 x = int(blocks[2])
                 y = int(blocks[3])
                 coordinates.append((x, y))
-                resource = random.uniform(min_res, max_res)
+                cpu = random.uniform(min_res, max_res)
+                flow = random.uniform(min_res, max_res)
+                queue = random.uniform(min_res, max_res)
 
                 # 属于transit-stub模型网络的特殊操作
                 if network_name == 'sub-ts' and len(coordinates) <= transit_nodes:
-                    network_file.write("%d %d %f\n" % (x, y, 100 + resource))
+                    network_file.write("%d %d %f %f %f\n" % (x, y, 100 + cpu, 100+flow, 100+queue))
                     continue
 
-                network_file.write("%d %d %f\n" % (x, y, resource))
+                network_file.write("%d %d %f %f %f\n" % (x, y, cpu, flow, queue))
 
             # Step4-3: 依次写入链路信息（起始节点，终止节点，带宽资源，时延）
             for line in lines[6 + node_num:]:
                 from_id, to_id, length, a = [int(x) for x in line.split()]
                 distance = self.calculate_dis(coordinates[from_id], coordinates[to_id])
-                resource = random.uniform(min_res, max_res)
+                bw = random.uniform(min_res, max_res)
 
                 # 属于transit-stub模型网络的特殊操作
                 if network_name == 'sub-ts':
                     if from_id < transit_nodes and to_id < transit_nodes:
-                        network_file.write("%d %d %f %f\n" % (from_id, to_id, 200 + resource, distance))
+                        network_file.write("%d %d %f %f\n" % (from_id, to_id, 200 + bw, distance))
                         continue
                     if from_id < transit_nodes or to_id < transit_nodes:
-                        network_file.write("%d %d %f %f\n" % (from_id, to_id, 100 + resource, distance))
+                        network_file.write("%d %d %f %f\n" % (from_id, to_id, 100 + bw, distance))
                         continue
 
-                network_file.write("%d %d %f %f\n" % (from_id, to_id, resource, distance))
+                network_file.write("%d %d %f %f\n" % (from_id, to_id, bw, distance))
 
     @staticmethod
     def calculate_dis(coordinate1, coordinate2):
@@ -168,5 +175,5 @@ if __name__ == '__main__':
     # 生成节点数为1×4×(1+3×8)=100，连通率为0.5的Transit-Stub型物理网络
     # make_sub_ts(1, 3, 4, 8, 50, 100)
 
-    # 平均每1000个时间单位内到达40个虚拟网络请求， 且虚拟节点数服从10~20的均匀分布，请求资源服从50~100的均匀分布
+    # 平均每1000个时间单位内到达8个虚拟网络请求， 且虚拟节点数服从10~20的均匀分布，请求资源服从25~50的均匀分布
     constructor.make_batch_req(8, 10, 20, 25, 50)

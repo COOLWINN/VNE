@@ -7,22 +7,22 @@ class Network:
     def __init__(self, path):
         self.files_dir = path
 
-    def get_networks(self, sub_filename, req_num, child_req_num=0):
+    def get_networks(self, sub_filename, req_num, child_req_num=0, more_flag=False):
         """读取 req_num 个虚拟网络及 req_num*child_num 个子虚拟网络请求，构成底层虚拟网络请求事件队列和子虚拟网络请求事件队列"""
         # 底层物理网络
-        sub = self.read_network_file(sub_filename)
+        sub = self.read_network_file(sub_filename, more_flag)
         # 第1层虚拟网络请求
-        queue1 = self.get_reqs(req_num)
+        queue1 = self.get_reqs(req_num, more_flag)
         # 第2层虚拟网络请求
-        queue2 = self.get_child_reqs(req_num, child_req_num)
+        queue2 = self.get_child_reqs(req_num, child_req_num, more_flag)
         return sub, queue1, queue2
 
-    def get_reqs(self, req_num):
+    def get_reqs(self, req_num, more_flag):
         """读取req_num个虚拟网络请求文件，构建虚拟网络请求事件队列"""
         queue = []
         for i in range(req_num):
             filename = 'req%d.txt' % i
-            req_arrive = self.read_network_file(filename)
+            req_arrive = self.read_network_file(filename, more_flag)
             req_arrive.graph['id'] = i
             req_leave = copy.deepcopy(req_arrive)
             req_leave.graph['type'] = 1
@@ -33,18 +33,18 @@ class Network:
         queue.sort(key=lambda r: r.graph['time'])
         return queue
 
-    def get_child_reqs(self, req_num, child_req_num):
+    def get_child_reqs(self, req_num, child_req_num, more_flag):
         """读取子虚拟网络请求文件，构建子虚拟网络请求事件队列"""
         queue = []
         for i in range(req_num):
             for j in range(child_req_num):
                 child_req_filename = 'req%d-%d.txt' % (i, j)
-                child_req = self.read_network_file(child_req_filename)
+                child_req = self.read_network_file(child_req_filename, more_flag)
                 child_req.graph['id'] = j
                 queue.append(child_req)
         return queue
 
-    def read_network_file(self, filename):
+    def read_network_file(self, filename, more_flag):
         """读取网络文件并生成networkx.Graph实例"""
 
         mapped_info = {}
@@ -59,8 +59,14 @@ class Network:
             node_num, link_num = [int(x) for x in lines[0].split()]
             graph = nx.Graph(mapped_info=mapped_info)
             for line in lines[1: node_num + 1]:
-                x, y, c = [float(x) for x in line.split()]
-                graph.add_node(node_id, x_coordinate=x, y_coordinate=y, cpu=c, cpu_remain=c)
+                x, y, c, f, q = [float(x) for x in line.split()]
+                if more_flag:
+                    graph.add_node(node_id, x_coordinate=x, y_coordinate=y,
+                                   cpu=c, cpu_remain=c,
+                                   flow=f, flow_remain=f,
+                                   queue=q, queue_remain=q)
+                else:
+                    graph.add_node(node_id, x_coordinate=x, y_coordinate=y, cpu=c, cpu_remain=c)
                 node_id = node_id + 1
 
             for line in lines[-link_num:]:
@@ -72,8 +78,14 @@ class Network:
             node_num, link_num, time, duration, max_dis = [int(x) for x in lines[0].split()]
             graph = nx.Graph(type=0, time=time, duration=duration, mapped_info=mapped_info)
             for line in lines[1:node_num + 1]:
-                x, y, c = [float(x) for x in line.split()]
-                graph.add_node(node_id, x_coordinate=x, y_coordinate=y, cpu=c, cpu_remain=c)
+                x, y, c, f, q = [float(x) for x in line.split()]
+                if more_flag:
+                    graph.add_node(node_id, x_coordinate=x, y_coordinate=y,
+                                   cpu=c, cpu_remain=c,
+                                   flow=f, flow_remain=f,
+                                   queue=q, queue_remain=q)
+                else:
+                    graph.add_node(node_id, x_coordinate=x, y_coordinate=y, cpu=c, cpu_remain=c)
                 node_id = node_id + 1
 
             for line in lines[-link_num:]:

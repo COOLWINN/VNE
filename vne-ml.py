@@ -7,10 +7,10 @@ from algorithm import Algorithm
 def main():
 
     # Step1: 读取底层网络和虚拟网络请求文件
-    network_files_dir = 'networks-0322/'
+    network_files_dir = 'networks-more/'
     sub_filename = 'sub-wm.txt'
     networks = Network(network_files_dir)
-    sub, queue1, queue2 = networks.get_networks(sub_filename, 400, 4)
+    sub, queue1, queue2 = networks.get_networks(sub_filename, 2000, 0)
 
     # Step2: 配置映射算法
     name = 'ml'
@@ -26,7 +26,7 @@ def main():
 
     # Step4: 输出映射结果文件
     tool = Analysis()
-    tool.save_result(algorithm.evaluation, '%s-VNE-0321-%s.txt' % (name, node_arg))
+    tool.save_result(algorithm.evaluation, '%s-VNE-0326-%s-only_cpu.txt' % (name, node_arg))
 
 
 if __name__ == '__main__':

@@ -3,6 +3,8 @@ import numpy as np
 import copy
 import time
 from comparison3.mdp import Env
+import networkx as nx
+from network import Network
 
 
 class RL:
@@ -30,7 +32,7 @@ class RL:
             print("Iteration %s" % iteration)
             # 每轮训练开始前，都需要重置底层网络和相关的强化学习环境
             sub_copy = copy.deepcopy(self.sub)
-            env = Env(self.sub.net)
+            env = Env(self.sub)
             # 创建存储参数梯度的缓冲器
             grad_buffer = self.sess.run(self.tvars)
             # 初始化为0
@@ -58,7 +60,7 @@ class RL:
                     for vn_id in range(req.number_of_nodes()):
                         x = np.reshape(observation, [1, observation.shape[0], observation.shape[1], 1])
 
-                        sn_id = self.choose_action(observation, sub_copy.net, req.nodes[vn_id]['cpu'], acts)
+                        sn_id = self.choose_action(observation, sub_copy, req.nodes[vn_id]['cpu'], acts)
 
                         if sn_id == -1:
                             break
@@ -98,8 +100,25 @@ class RL:
                             grad_buffer[1] *= reward
 
                             # 更新底层网络
-                            sub_copy.mapped_info.update({req.graph['id']: (node_map, link_map)})
-                            sub_copy.change_resource(req, 'allocate')
+                            mapped_info = sub_copy.graph['mapped_info']
+                            mapped_info.update({req.graph['id']: (node_map, link_map)})
+                            sub_copy.graph['mapped_info'] = mapped_info
+
+                            req_id = req.graph['id']
+                            node_map = sub_copy.graph['mapped_info'][req_id][0]
+                            link_map = sub_copy.graph['mapped_info'][req_id][1]
+
+                            # 分配节点资源
+                            for v_id, s_id in node_map.items():
+                                sub_copy.nodes[s_id]['cpu_remain'] -= req.nodes[v_id]['cpu']
+
+                            # 分配或释放链路资源
+                            for vl, path in link_map.items():
+                                link_resource = req[vl[0]][vl[1]]['bw']
+                                start = path[0]
+                                for end in path[1:]:
+                                    sub_copy[start][end]['bw_remain'] -= link_resource
+                                    start = end
                         else:
                             print("Failure!")
 
@@ -116,10 +135,29 @@ class RL:
                 if req.graph['type'] == 1:
 
                     print("\tIt's time is out, release the occupied resources")
-                    if req_id in sub_copy.mapped_info.keys():
-                        sub_copy.change_resource(req, 'release')
+                    if req_id in sub_copy.graph['mapped_info'].keys():
+                        req_id = req.graph['id']
+                        node_map = sub_copy.graph['mapped_info'][req_id][0]
+                        link_map = sub_copy.graph['mapped_info'][req_id][1]
 
-                env.set_sub(sub_copy.net)
+                        # 分配或释放节点资源
+                        for v_id, s_id in node_map.items():
+                            sub_copy.nodes[s_id]['cpu_remain'] += req.nodes[v_id]['cpu']
+
+                        # 分配或释放链路资源
+                        for vl, path in link_map.items():
+                            link_resource = req[vl[0]][vl[1]]['bw']
+                            start = path[0]
+                            for end in path[1:]:
+                                sub_copy[start][end]['bw_remain'] += link_resource
+                                start = end
+
+                        # 移除相应的映射信息
+                        mapped_info = sub_copy.graph['mapped_info']
+                        mapped_info.pop(req_id)
+                        sub_copy.graph['mapped_info'] = mapped_info
+
+                env.set_sub(sub_copy)
 
             loss_average.append(np.mean(values))
             iteration = iteration + 1
@@ -135,12 +173,12 @@ class RL:
         """基于训练后的策略网络，直接得到每个虚拟网络请求的节点映射集合"""
 
         node_map = {}
-        env = Env(sub.net)
+        env = Env(sub)
         env.set_vnr(req)
         observation = env.reset()
         acts = []
         for vn_id in range(req.number_of_nodes()):
-            sn_id = self.choose_max_action(observation, sub.net, req.nodes[vn_id]['cpu'], acts)
+            sn_id = self.choose_max_action(observation, sub, req.nodes[vn_id]['cpu'], acts)
             if sn_id == -1:
                 break
             else:
@@ -246,7 +284,19 @@ class RL:
 
     def calculate_reward(self, sub, req, node_map):
 
-        link_map = sub.link_mapping(req, node_map)
+        link_map = {}
+        for vLink in req.edges:
+            vn_from = vLink[0]
+            vn_to = vLink[1]
+            sn_from = node_map[vn_from]
+            sn_to = node_map[vn_to]
+            if nx.has_path(sub, source=sn_from, target=sn_to):
+                for path in Network.k_shortest_path(sub, sn_from, sn_to, 1):
+                    if Network.get_path_capacity(sub, path) >= req[vn_from][vn_to]['bw']:
+                        link_map.update({vLink: path})
+                        break
+                    else:
+                        continue
         if len(link_map) == req.number_of_edges():
             requested, occupied = 0, 0
 

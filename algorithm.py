@@ -29,7 +29,7 @@ class Algorithm:
         elif self.name == 'rl':
             training_set_path = 'comparison3/training_set/'
             networks = Network(training_set_path)
-            training_set = networks.get_reqs(1000)
+            training_set = networks.get_reqs_for_train(1000)
             rl = RL(sub=sub,
                     n_actions=sub.number_of_nodes(),
                     n_features=4,
@@ -124,7 +124,8 @@ class Algorithm:
         # 返回节点映射集合
         return node_map
 
-    def link_mapping(self, sub, req, node_map, k=1):
+    @staticmethod
+    def link_mapping(sub, req, node_map, k=1):
         """求解链路映射问题"""
 
         link_map = {}

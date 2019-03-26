@@ -89,13 +89,13 @@ class Constructor:
 
             self.make_req(i, min_res, max_res, node_amount, time, duration)
 
-            # 生成子虚拟网络文件
-            for j in range(4):
-                j_node_amount = random.randint(2, min_num_nodes - 1)
-                index = "%d-%d" % (i, j)
-                time2 = time + int(duration*(j+1)/10)
-                duration2 = MIN_DURATION_SECOND + int(-math.log(random.random()) * (DURATION_MEAN_SECOND - MIN_DURATION_SECOND))
-                self.make_req(index, 0, min_res, j_node_amount, time2, duration2)
+            # # 生成子虚拟网络文件
+            # for j in range(4):
+            #     j_node_amount = random.randint(2, min_num_nodes - 1)
+            #     index = "%d-%d" % (i, j)
+            #     time2 = time + int(duration*(j+1)/10)
+            #     duration2 = MIN_DURATION_SECOND + int(-math.log(random.random()) * (DURATION_MEAN_SECOND - MIN_DURATION_SECOND))
+            #     self.make_req(index, 0, min_res, j_node_amount, time2, duration2)
 
     def generate_network_file(self, network_name, node_num, min_res, max_res, time=0, duration=0, transit_nodes=0):
         """生成网络文件"""
@@ -167,7 +167,7 @@ class Constructor:
 
 if __name__ == '__main__':
 
-    constructor = Constructor('networks-0322/')
+    constructor = Constructor('networks-more/')
 
     # 生成节点数为100，连通率为0.5的随机型物理网络
     constructor.make_sub_wm(100, 50, 100)
@@ -175,5 +175,5 @@ if __name__ == '__main__':
     # 生成节点数为1×4×(1+3×8)=100，连通率为0.5的Transit-Stub型物理网络
     # make_sub_ts(1, 3, 4, 8, 50, 100)
 
-    # 平均每1000个时间单位内到达8个虚拟网络请求， 且虚拟节点数服从10~20的均匀分布，请求资源服从25~50的均匀分布
-    constructor.make_batch_req(8, 10, 20, 25, 50)
+    # 平均每1000个时间单位内到达40个虚拟网络请求， 且虚拟节点数服从2~10的均匀分布，请求资源服从0~50的均匀分布
+    constructor.make_batch_req(40, 2, 10, 0, 50)

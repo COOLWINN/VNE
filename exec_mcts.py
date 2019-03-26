@@ -1,20 +1,19 @@
 import time
 from network import Network
 from analysis import Analysis
-from more.algorithm import Algorithm
+from algorithm import Algorithm
 
 
 def main():
-
     # Step1: 读取底层网络和虚拟网络请求文件
     network_files_dir = 'networks-more/'
     sub_filename = 'sub-wm.txt'
     networks = Network(network_files_dir)
-    sub, queue1, queue2 = networks.get_networks(sub_filename, 2000, 0, more_flag=True)
+    sub, queue1, queue2 = networks.get_networks(sub_filename, 1000, 0)
 
     # Step2: 配置映射算法
-    node_arg = 50
-    algorithm = Algorithm(node_arg=node_arg, link_arg=5)
+    name = 'mcts'
+    algorithm = Algorithm(name, link_arg=1)
     algorithm.configure(sub)
 
     # Step3: 处理虚拟网络请求事件
@@ -25,7 +24,7 @@ def main():
 
     # Step4: 输出映射结果文件
     tool = Analysis()
-    tool.save_result(algorithm.evaluation, 'ML-VNE-0326-%s-more.txt' % node_arg)
+    tool.save_result(algorithm.evaluation, 'MCTS-VNE-0326.txt')
 
 
 if __name__ == '__main__':

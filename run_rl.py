@@ -7,7 +7,7 @@ from algorithm import Algorithm
 def main():
 
     # Step1: 读取底层网络和虚拟网络请求文件
-    network_files_dir = 'networks-more/'
+    network_files_dir = 'networks/'
     sub_filename = 'sub-wm.txt'
     networks = Network(network_files_dir)
     sub, queue1, queue2 = networks.get_networks(sub_filename, 1000, 0)

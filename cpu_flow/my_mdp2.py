@@ -34,7 +34,8 @@ class MyEnv(gym.Env):
         flow_remain = (flow_remain - np.min(flow_remain)) / (np.max(flow_remain) - np.min(flow_remain))
         bw_all_remain = (bw_all_remain - np.min(bw_all_remain)) / (np.max(bw_all_remain) - np.min(bw_all_remain))
         self.state.current_state(cpu_remain, flow_remain, bw_all_remain)
-        reward = (self.sub.nodes[action]['cpu_remain']+self.sub.nodes[action]['flow_remain']) / (self.sub.nodes[action]['cpu']+self.sub.nodes[action]['flow'])
+        # reward = (self.sub.nodes[action]['cpu_remain']+self.sub.nodes[action]['flow_remain']) / (self.sub.nodes[action]['cpu']+self.sub.nodes[action]['flow'])
+        reward = self.sub.nodes[action]['cpu_remain'] / self.sub.nodes[action]['cpu']
         return self.state.state_matrix(), reward, False, {}
 
     def reset(self):

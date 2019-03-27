@@ -24,7 +24,7 @@ class Analysis:
         self.epoch_lines = ['b-', 'r-', 'y-', 'g-', 'c-']
         self.epoch_types = ['50', '60', '70', '80', '90', '100']
 
-        self.resource_lines = ['b-', 'r-', 'g-']
+        self.resource_lines = ['b:', 'r--', 'g-']
         self.resource_types = ['cpu', 'cpu and flow', 'cpu, flow and queue']
 
     def save_result(self, evaluation, filename):

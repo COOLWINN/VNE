@@ -23,7 +23,6 @@ class Algorithm:
         self.agent = agent
 
     def handle(self, sub, queue1, queue2):
-        total, success = 0, 0
         for req in queue1:
 
             # the id of current request

@@ -32,7 +32,7 @@ class Agent:
 
             # 采样
             for count in range(vnr.number_of_nodes()):
-                action = self.choose_action(self.p_network, observation, sub, vnr.nodes[count]['cpu'], vnr.nodes[count]['flow'], vnr.nodes[count]['queue'])
+                action = self.choose_action(self.p_network, observation, sub, vnr.nodes[count]['cpu'], vnr.nodes[count]['flow'])
                 if action == -1:
                     break
                 else:
@@ -59,11 +59,11 @@ class Agent:
         node_map = {}
         chosen_nodes = []
         for count in range(vnr.number_of_nodes()):
-            action = self.choose_best_action(self.p_network, observation, sub, vnr.nodes[count]['cpu'], vnr.nodes[count]['flow'], vnr.nodes[count]['queue'], chosen_nodes)
+            action = self.choose_best_action(self.p_network, observation, sub, vnr.nodes[count]['cpu'], vnr.nodes[count]['flow'], chosen_nodes)
             if action == -1:
                 break
             else:
-                if sub.nodes[action]['cpu_remain'] < vnr.nodes[count]['cpu'] and sub.nodes[action]['flow_remain'] < vnr.nodes[count]['flow'] and sub.nodes[action]['queue_remain'] < vnr.nodes[count]['queue']:
+                if sub.nodes[action]['cpu_remain'] < vnr.nodes[count]['cpu'] and sub.nodes[action]['flow_remain'] < vnr.nodes[count]['flow']:
                     pass
                 observation_, _, done, info = env.step(action)
                 chosen_nodes.append(action)
@@ -74,7 +74,7 @@ class Agent:
 
         return node_map
 
-    def choose_action(self, model, observation, sub, current_node_cpu, current_node_flow, current_node_queue):
+    def choose_action(self, model, observation, sub, current_node_cpu, current_node_flow):
 
         x = np.reshape(observation, [1, observation.shape[0], observation.shape[1], 1])
         prob_weights = self.sess.run(model.scores, feed_dict={model.tf_obs: x})
@@ -82,7 +82,7 @@ class Agent:
         candidate_action = []
         candidate_score = []
         for index, score in enumerate(prob_weights.ravel()):
-            if index not in self.ep_as and sub.nodes[index]['cpu_remain'] >= current_node_cpu and sub.nodes[index]['flow_remain'] >= current_node_flow and sub.nodes[index]['queue_remain'] >= current_node_queue:
+            if index not in self.ep_as and sub.nodes[index]['cpu_remain'] >= current_node_cpu and sub.nodes[index]['flow_remain'] >= current_node_flow:
                 candidate_action.append(index)
                 candidate_score.append(score)
         if len(candidate_action) == 0:
@@ -93,7 +93,7 @@ class Agent:
             action = np.random.choice(candidate_action, p=candidate_prob)
             return action
 
-    def choose_best_action(self, model, observation, sub, current_node_cpu, current_node_flow, current_node_queue, chosen_nodes):
+    def choose_best_action(self, model, observation, sub, current_node_cpu, current_node_flow, chosen_nodes):
 
         x = np.reshape(observation, [1, observation.shape[0], observation.shape[1], 1])
         tf_prob = self.sess.run(model.probs, feed_dict={model.tf_obs: x})
@@ -105,7 +105,7 @@ class Agent:
         candidate = np.argmax(filter_prob)
 
         for index, score in enumerate(filter_prob):
-            if sub.nodes[index]['cpu_remain'] < current_node_cpu and sub.nodes[index]['flow_remain'] < current_node_flow and sub.nodes[index]['queue_remain'] < current_node_queue:
+            if sub.nodes[index]['cpu_remain'] < current_node_cpu and sub.nodes[index]['flow_remain'] < current_node_flow:
                 filter_prob[index] = 0.0
         action = np.argmax(filter_prob)
 

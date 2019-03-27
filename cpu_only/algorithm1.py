@@ -1,6 +1,6 @@
 import networkx as nx
-from multi_evaluation import Evaluation
-from more.agent2 import Agent
+from evaluation import Evaluation
+from .agent1 import Agent
 from network import Network
 
 
@@ -15,7 +15,7 @@ class Algorithm:
     def configure(self, sub):
         self.evaluation = Evaluation(sub)
         agent = Agent(action_num=sub.number_of_nodes(),
-                      feature_num=7,
+                      feature_num=5,
                       learning_rate=0.02,
                       reward_decay=0.95,
                       episodes=self.node_arg)
@@ -23,7 +23,7 @@ class Algorithm:
         self.agent = agent
 
     def handle(self, sub, queue1, queue2):
-        total, success = 0, 0
+
         for req in queue1:
 
             # the id of current request
@@ -33,24 +33,7 @@ class Algorithm:
                 """a request which is newly arrived"""
 
                 print("\nTry to map request%s: " % req_id)
-                if self.mapping(sub, req):
-                    print("Success!")
-                    # # 子虚拟网络请求的映射
-                    # i = 0
-                    # child_algorithm = Algorithm('mcts', link_arg=5)
-                    # child_algorithm.configure(req)
-                    # for child in queue2[req_id*4:req_id*4+4]:
-                    #     print("\nTry to map its child request %s: " % i)
-                    #     total = total + 1
-                    #     i = i+1
-                    #     self.evaluation.total_arrived += 1
-                    #     # if tmp.upper_mapping(child, 'grc', self):
-                    #     if child_algorithm.mapping(req, child):
-                    #         print("Child request %s is mapped successfully!" % i)
-                    #         self.evaluation.collect(child)
-                    #         success = success + 1
-                    #     else:
-                    #         print("Failure")
+                self.mapping(sub, req)
 
             if req.graph['type'] == 1:
                 """a request which is ready to leave"""
@@ -58,12 +41,11 @@ class Algorithm:
                     print("\nRelease the resources which are occupied by request%s" % req_id)
                     self.change_resource(sub, req, 'release')
 
-        print("accepted requests: %s" % str(self.evaluation.total_accepted-success))
-        print("arrived child requests: %s" % total)
-        print("accepted child requests: %s" % success)
+        print("accepted requests: %s" % self.evaluation.total_accepted)
+        print("arrived requests: %s" % self.evaluation.total_arrived)
 
     def mapping(self, sub, req):
-        """two phrases:node mapping and link mapping"""
+        """cpu_flow phrases:node mapping and link mapping"""
 
         self.evaluation.total_arrived += 1
 
@@ -134,8 +116,6 @@ class Algorithm:
         # 分配或释放节点资源
         for v_id, s_id in node_map.items():
             sub.nodes[s_id]['cpu_remain'] += factor * req.nodes[v_id]['cpu']
-            sub.nodes[s_id]['flow_remain'] += factor * req.nodes[v_id]['flow']
-            sub.nodes[s_id]['queue_remain'] += factor * req.nodes[v_id]['queue']
 
         # 分配或释放链路资源
         for vl, path in link_map.items():

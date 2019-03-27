@@ -12,9 +12,9 @@ def main():
     networks = Network(network_files_dir)
     sub, queue1, queue2 = networks.get_networks(sub_filename, 1000, 0)
 
-    # Step2: 配置映射算法
-    name = 'ml'
-    node_arg = 50
+    # Step2: 选择映射算法
+    name = 'rl'
+    node_arg = 100
     algorithm = Algorithm(name, node_arg=node_arg, link_arg=5)
     algorithm.configure(sub)
 
@@ -26,7 +26,7 @@ def main():
 
     # Step4: 输出映射结果文件
     tool = Analysis('results_single/')
-    tool.save_result(algorithm.evaluation, 'ML-VNE-0326-%s-only_cpu.txt' % node_arg)
+    tool.save_result(algorithm.evaluation, 'RL-VNE-0326-%s.txt' % node_arg)
 
 
 if __name__ == '__main__':

@@ -8,7 +8,8 @@ __pycache__/
 venv/
 networks/
 results/
+results_single/
 networks-tmp/
-networks-0322/
 networks-more/
+networks-multi/
 requests/

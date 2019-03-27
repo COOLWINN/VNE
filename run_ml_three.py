@@ -1,7 +1,7 @@
 import time
 from network import Network
 from analysis import Analysis
-from more.algorithm import Algorithm
+from cpu_flow_queue.algorithm3 import Algorithm
 
 
 def main():
@@ -10,7 +10,7 @@ def main():
     network_files_dir = 'networks-more/'
     sub_filename = 'sub-wm.txt'
     networks = Network(network_files_dir)
-    sub, queue1, queue2 = networks.get_networks(sub_filename, 1000, 0, more_flag=True)
+    sub, queue1, queue2 = networks.get_networks(sub_filename, 1000, resource_num=3)
 
     # Step2: 配置映射算法
     node_arg = 50
@@ -24,8 +24,8 @@ def main():
     print(time_cost)
 
     # Step4: 输出映射结果文件
-    tool = Analysis()
-    tool.save_result(algorithm.evaluation, 'ML-VNE-0326-%s-more.txt' % node_arg)
+    tool = Analysis('results_single/')
+    tool.save_result(algorithm.evaluation, 'ML-VNE-0327-%s-three-2.txt' % node_arg)
 
 
 if __name__ == '__main__':

@@ -14,7 +14,7 @@ def main():
 
     # Step2: 配置映射算法
     name = 'grc'
-    algorithm = Algorithm(name, link_arg=5)
+    algorithm = Algorithm(name, link_arg=1)
     algorithm.configure(sub)
 
     # Step3: 处理虚拟网络请求事件
@@ -24,7 +24,7 @@ def main():
     print(time_cost)
 
     # Step4: 输出映射结果文件
-    tool = Analysis()
+    tool = Analysis('results_single/')
     tool.save_result(algorithm.evaluation, 'GRC-VNE-0326.txt')
 
 

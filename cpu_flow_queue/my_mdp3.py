@@ -2,7 +2,7 @@ import gym
 from gym import spaces
 import copy
 import numpy as np
-from .state2 import EnvState
+from .state3 import EnvState
 from network import Network
 
 

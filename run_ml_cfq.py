@@ -1,7 +1,9 @@
 import time
 from network import Network
 from analysis import Analysis
-from cpu_flow_queue.algorithm3 import Algorithm
+from algorithm import Algorithm
+from queue import PriorityQueue as PQ
+from event import Event
 
 
 def main():
@@ -10,16 +12,19 @@ def main():
     network_files_dir = 'networks/'
     sub_filename = 'sub-wm.txt'
     networks = Network(network_files_dir)
-    sub, queue1, queue2 = networks.get_networks(sub_filename, 1000, resource_num=3)
+    sub, requests = networks.get_networks_single_layer(sub_filename, 1000, granularity=3)
+    events = PQ()
+    for req in requests:
+        events.put(Event(req))
 
     # Step2: 配置映射算法
     node_arg = 50
-    algorithm = Algorithm(node_arg=node_arg, link_arg=1)
+    algorithm = Algorithm('ml_3', node_arg=node_arg, link_arg=1)
     algorithm.configure(sub)
 
     # Step3: 处理虚拟网络请求事件
     start = time.time()
-    algorithm.handle(sub, queue1, queue2)
+    algorithm.handle(sub, events, requests)
     time_cost = time.time() - start
     print(time_cost)
 

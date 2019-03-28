@@ -3,8 +3,13 @@ from evaluation import Evaluation
 from comparison1.grc import GRC
 from comparison2.mcts import MCTS
 from comparison3.reinforce import RL
+from cpu_only.agent1 import Agent1
+from cpu_flow.agent2 import Agent2
+from cpu_flow_queue.agent3 import Agent3
 from mine.agent import PolicyGradient
 from network import Network
+import copy
+from event import Event
 
 
 class Algorithm:
@@ -17,7 +22,9 @@ class Algorithm:
         self.evaluation = None
 
     def configure(self, sub):
+
         self.evaluation = Evaluation(sub)
+
         if self.name == 'grc':
             grc = GRC(damping_factor=0.9, sigma=1e-6)
             self.agent = grc
@@ -29,7 +36,7 @@ class Algorithm:
         elif self.name == 'rl':
             training_set_path = 'comparison3/training_set/'
             networks = Network(training_set_path)
-            training_set = networks.get_reqs_for_train(1000)
+            training_set = networks.get_reqs(1000)
             rl = RL(sub=sub,
                     n_actions=sub.number_of_nodes(),
                     n_features=4,
@@ -39,51 +46,77 @@ class Algorithm:
             rl.train(training_set)
             self.agent = rl
 
+        elif self.name == 'ml_1':
+            agent = Agent1(action_num=sub.number_of_nodes(),
+                           feature_num=5,
+                           learning_rate=0.02,
+                           reward_decay=0.95,
+                           episodes=self.node_arg)
+            self.agent = agent
+
+        elif self.name == 'ml_2':
+            agent = Agent2(action_num=sub.number_of_nodes(),
+                           feature_num=6,
+                           learning_rate=0.02,
+                           reward_decay=0.95,
+                           episodes=self.node_arg)
+            self.agent = agent
+
+        elif self.name == 'ml_3':
+            agent = Agent3(action_num=sub.number_of_nodes(),
+                           feature_num=7,
+                           learning_rate=0.02,
+                           reward_decay=0.95,
+                           episodes=self.node_arg)
+            self.agent = agent
+
         else:
-            pg = PolicyGradient(action_num=sub.number_of_nodes(),
-                                feature_num=7,
-                                learning_rate=0.02,
-                                reward_decay=0.95,
-                                episodes=self.node_arg)
-            self.agent = pg
+            agent = PolicyGradient(action_num=sub.number_of_nodes(),
+                                   feature_num=7,
+                                   learning_rate=0.02,
+                                   reward_decay=0.95,
+                                   episodes=self.node_arg)
+            self.agent = agent
 
-    def handle(self, sub, queue1, queue2):
+    def handle(self, sub, events, requests):
+
         total, success = 0, 0
-        for req in queue1:
 
-            # the id of current request
+        while not events.empty():
+
+            req = events.get().req
             req_id = req.graph['id']
+            parent_id = req.graph['parent']
 
-            if req.graph['type'] == 0:
-                """a request which is newly arrived"""
+            if parent_id == -1:
+                if req.graph['type'] == 0:
+                    print("\nTry to map request%s: " % req_id)
+                    if self.mapping(sub, req):
+                        req_leave = copy.deepcopy(req)
+                        req_leave.graph['type'] = 1
+                        req_leave.graph['time'] = req.graph['time'] + req.graph['duration']
+                        events.put(Event(req_leave))
 
-                print("\nTry to map request%s: " % req_id)
-                if self.mapping(sub, req):
-                    print("Success!")
-                    # 子虚拟网络请求的映射
-                    i = 0
+                if req.graph['type'] == 1:
+                    if req_id in sub.graph['mapped_info'].keys():
+                        print("\nRelease the resources which are occupied by request%s" % req_id)
+                        self.change_resource(sub, req, 'release')
+
+            else:
+                if parent_id in sub.graph['mapped_info'].keys():
                     child_algorithm = Algorithm('mcts', link_arg=5)
                     child_algorithm.configure(req)
-                    for child in queue2[req_id*4:req_id*4+4]:
-                        print("\nTry to map its child request %s: " % i)
-                        total = total + 1
-                        i = i+1
-                        self.evaluation.total_arrived += 1
-                        # if tmp.upper_mapping(child, 'grc', self):
-                        if child_algorithm.mapping(req, child):
-                            print("Child request %s is mapped successfully!" % i)
-                            self.evaluation.collect(child)
-                            success = success + 1
-                        else:
-                            print("Failure")
+                    print("\nTry to map the %sth upper request onto virtual network %s: " % (req_id, parent_id))
+                    total = total + 1
+                    self.evaluation.total_arrived += 1
+                    if child_algorithm.mapping(requests[parent_id], req):
+                        print("Success!")
+                        self.evaluation.collect(req)
+                        success = success + 1
+                    else:
+                        print("Failure")
 
-            if req.graph['type'] == 1:
-                """a request which is ready to leave"""
-                if req_id in sub.graph['mapped_info'].keys():
-                    print("\nRelease the resources which are occupied by request%s" % req_id)
-                    self.change_resource(sub, req, 'release')
-
-        print("accepted requests: %s" % str(self.evaluation.total_accepted-success))
+        print("accepted requests: %s" % str(self.evaluation.total_accepted - success))
         print("arrived child requests: %s" % total)
         print("accepted child requests: %s" % success)
 

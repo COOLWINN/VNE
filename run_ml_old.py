@@ -2,6 +2,8 @@ import time
 from network import Network
 from analysis import Analysis
 from algorithm import Algorithm
+from queue import PriorityQueue as PQ
+from event import Event
 
 
 def main():
@@ -10,23 +12,25 @@ def main():
     network_files_dir = 'networks/'
     sub_filename = 'sub-wm.txt'
     networks = Network(network_files_dir)
-    sub, queue1, queue2 = networks.get_networks(sub_filename, 1000, 0)
+    sub, requests = networks.get_networks_single_layer(sub_filename, 1000)
+    events = PQ()
+    for req in requests:
+        events.put(Event(req))
 
     # Step2: 配置映射算法
-    name = 'ml'
     node_arg = 50
-    algorithm = Algorithm(name, node_arg=node_arg, link_arg=5)
+    algorithm = Algorithm('ml', node_arg=node_arg, link_arg=5)
     algorithm.configure(sub)
 
     # Step3: 处理虚拟网络请求事件
     start = time.time()
-    algorithm.handle(sub, queue1, queue2)
+    algorithm.handle(sub, events, requests)
     time_cost = time.time() - start
     print(time_cost)
 
     # Step4: 输出映射结果文件
     tool = Analysis('results_single/')
-    tool.save_result(algorithm.evaluation, 'ML-VNE-0326-%s-only_cpu.txt' % node_arg)
+    tool.save_result(algorithm.evaluation, 'ML-VNE-old-1.txt')
 
 
 if __name__ == '__main__':

@@ -7,61 +7,55 @@ class Network:
     def __init__(self, path):
         self.files_dir = path
 
-    def get_networks(self, sub_filename, req_num, child_req_num=0, resource_num=1):
+    def get_networks(self, sub_filename, req_num, child_req_num, granularity=1):
         """读取 req_num 个虚拟网络及 req_num*child_num 个子虚拟网络请求，构成底层虚拟网络请求事件队列和子虚拟网络请求事件队列"""
         # 底层物理网络
-        sub = self.read_network_file(sub_filename, resource_num)
+        sub = self.read_network_file(sub_filename, granularity)
         # 第1层虚拟网络请求
-        queue1 = self.get_reqs(req_num, resource_num)
+        queue1 = self.get_reqs(req_num, granularity)
         # 第2层虚拟网络请求
-        queue2 = self.get_child_reqs(req_num, child_req_num, resource_num)
+        queue2 = self.get_child_reqs(req_num, child_req_num, granularity)
         return sub, queue1, queue2
 
-    def get_reqs(self, req_num, more_flag):
-        """读取req_num个虚拟网络请求文件，构建虚拟网络请求事件队列"""
-        queue = []
+    def get_networks_single_layer(self, sub_filename, req_num, granularity=1):
+        """读取 req_num 个虚拟网络及 req_num*child_num 个子虚拟网络请求，构成底层虚拟网络请求事件队列和子虚拟网络请求事件队列"""
+        # 底层物理网络
+        sub = self.read_network_file(sub_filename, granularity)
+        # 虚拟网络请求
+        requests = []
         for i in range(req_num):
             i = i + 1000
             filename = 'req%d.txt' % i
-            req_arrive = self.read_network_file(filename, more_flag)
+            req_arrive = self.read_network_file(filename, granularity)
+            req_arrive.graph['parent'] = -1
             req_arrive.graph['id'] = i
-            req_leave = copy.deepcopy(req_arrive)
-            req_leave.graph['type'] = 1
-            req_leave.graph['time'] = req_arrive.graph['time'] + req_arrive.graph['duration']
-            queue.append(req_arrive)
-            queue.append(req_leave)
-        # 按照时间（到达时间或离开时间）对这些虚拟网络请求从小到大进行排序
-        queue.sort(key=lambda r: r.graph['time'])
-        return queue
+            requests.append(req_arrive)
+        return sub, requests
 
-    def get_reqs_for_train(self, req_num):
+    def get_reqs(self, req_num, granularity=1):
         """读取req_num个虚拟网络请求文件，构建虚拟网络请求事件队列"""
         queue = []
         for i in range(req_num):
             filename = 'req%d.txt' % i
-            req_arrive = self.read_network_file(filename)
+            req_arrive = self.read_network_file(filename, granularity)
+            req_arrive.graph['parent'] = -1
             req_arrive.graph['id'] = i
-            req_leave = copy.deepcopy(req_arrive)
-            req_leave.graph['type'] = 1
-            req_leave.graph['time'] = req_arrive.graph['time'] + req_arrive.graph['duration']
             queue.append(req_arrive)
-            queue.append(req_leave)
-        # 按照时间（到达时间或离开时间）对这些虚拟网络请求从小到大进行排序
-        queue.sort(key=lambda r: r.graph['time'])
         return queue
 
-    def get_child_reqs(self, req_num, child_req_num, more_flag):
+    def get_child_reqs(self, req_num, child_req_num, granularity):
         """读取子虚拟网络请求文件，构建子虚拟网络请求事件队列"""
         queue = []
         for i in range(req_num):
             for j in range(child_req_num):
                 child_req_filename = 'req%d-%d.txt' % (i, j)
-                child_req = self.read_network_file(child_req_filename, more_flag)
+                child_req = self.read_network_file(child_req_filename, granularity)
+                child_req.graph['parent'] = i
                 child_req.graph['id'] = j
                 queue.append(child_req)
         return queue
 
-    def read_network_file(self, filename, resource_num=1):
+    def read_network_file(self, filename, granularity=1):
         """读取网络文件并生成networkx.Graph实例"""
 
         mapped_info = {}
@@ -77,10 +71,10 @@ class Network:
             graph = nx.Graph(mapped_info=mapped_info)
             for line in lines[1: node_num + 1]:
                 x, y, c, f, q = [float(x) for x in line.split()]
-                if resource_num == 1:
+                if granularity == 1:
                     graph.add_node(node_id, x_coordinate=x, y_coordinate=y,
                                    cpu=c, cpu_remain=c)
-                elif resource_num == 2:
+                elif granularity == 2:
                     graph.add_node(node_id, x_coordinate=x, y_coordinate=y,
                                    cpu=c, cpu_remain=c,
                                    flow=f, flow_remain=f)
@@ -101,10 +95,10 @@ class Network:
             graph = nx.Graph(type=0, time=time, duration=duration, mapped_info=mapped_info)
             for line in lines[1:node_num + 1]:
                 x, y, c, f, q = [float(x) for x in line.split()]
-                if resource_num == 1:
+                if granularity == 1:
                     graph.add_node(node_id, x_coordinate=x, y_coordinate=y,
                                    cpu=c, cpu_remain=c)
-                elif resource_num == 2:
+                elif granularity == 2:
                     graph.add_node(node_id, x_coordinate=x, y_coordinate=y,
                                    cpu=c, cpu_remain=c,
                                    flow=f, flow_remain=f)

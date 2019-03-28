@@ -6,7 +6,7 @@ import networkx as nx
 from network import Network
 
 
-class Agent:
+class Agent2:
 
     def __init__(self, action_num, feature_num, learning_rate, reward_decay, episodes):
         self.action_num = action_num

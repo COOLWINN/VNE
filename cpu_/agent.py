@@ -1,20 +1,20 @@
 import tensorflow as tf
 import numpy as np
-from .my_mdp2 import MyEnv
-from .model2 import Pnetwork
+from cpu_.my_mdp import MyEnv
+from model import PolicyModel
 import networkx as nx
 from network import Network
 
 
-class Agent2:
+class PolicyGradient:
 
-    def __init__(self, action_num, feature_num, learning_rate, reward_decay, episodes):
+    def __init__(self, sess, action_num, feature_num, learning_rate, reward_decay, episodes):
         self.action_num = action_num
-        self.p_network = Pnetwork(action_num, feature_num, learning_rate)
+        self.p_network = PolicyModel(action_num, feature_num, learning_rate)
         self.gamma = reward_decay
         self.episodes = episodes
         self.ep_obs, self.ep_as, self.ep_rs = [], [], []
-        self.sess = tf.Session()
+        self.sess = sess
 
     def train(self, sub, vnr):
         """通过蒙特卡洛采样不断尝试映射该虚拟网络请求，以获得效果最佳的策略网络"""
@@ -31,7 +31,7 @@ class Agent2:
 
             # 采样
             for count in range(vnr.number_of_nodes()):
-                action = self.choose_action(self.p_network, observation, sub, vnr.nodes[count]['cpu'], vnr.nodes[count]['flow'])
+                action = self.choose_action(self.p_network, observation, sub, vnr.nodes[count]['cpu'])
                 if action == -1:
                     break
                 else:
@@ -58,11 +58,11 @@ class Agent2:
         node_map = {}
         chosen_nodes = []
         for count in range(vnr.number_of_nodes()):
-            action = self.choose_best_action(self.p_network, observation, sub, vnr.nodes[count]['cpu'], vnr.nodes[count]['flow'], chosen_nodes)
+            action = self.choose_best_action(self.p_network, observation, sub, vnr.nodes[count]['cpu'], chosen_nodes)
             if action == -1:
                 break
             else:
-                if sub.nodes[action]['cpu_remain'] < vnr.nodes[count]['cpu'] and sub.nodes[action]['flow_remain'] < vnr.nodes[count]['flow']:
+                if sub.nodes[action]['cpu_remain'] < vnr.nodes[count]['cpu']:
                     pass
                 observation_, _, done, info = env.step(action)
                 chosen_nodes.append(action)
@@ -73,7 +73,7 @@ class Agent2:
 
         return node_map
 
-    def choose_action(self, model, observation, sub, current_node_cpu, current_node_flow):
+    def choose_action(self, model, observation, sub, current_node_cpu):
 
         x = np.reshape(observation, [1, observation.shape[0], observation.shape[1], 1])
         prob_weights = self.sess.run(model.scores, feed_dict={model.tf_obs: x})
@@ -81,7 +81,7 @@ class Agent2:
         candidate_action = []
         candidate_score = []
         for index, score in enumerate(prob_weights.ravel()):
-            if index not in self.ep_as and sub.nodes[index]['cpu_remain'] >= current_node_cpu and sub.nodes[index]['flow_remain'] >= current_node_flow:
+            if index not in self.ep_as and sub.nodes[index]['cpu_remain'] >= current_node_cpu:
                 candidate_action.append(index)
                 candidate_score.append(score)
         if len(candidate_action) == 0:
@@ -92,7 +92,7 @@ class Agent2:
             action = np.random.choice(candidate_action, p=candidate_prob)
             return action
 
-    def choose_best_action(self, model, observation, sub, current_node_cpu, current_node_flow, chosen_nodes):
+    def choose_best_action(self, model, observation, sub, current_node_cpu, chosen_nodes):
 
         x = np.reshape(observation, [1, observation.shape[0], observation.shape[1], 1])
         tf_prob = self.sess.run(model.probs, feed_dict={model.tf_obs: x})
@@ -104,7 +104,7 @@ class Agent2:
         candidate = np.argmax(filter_prob)
 
         for index, score in enumerate(filter_prob):
-            if sub.nodes[index]['cpu_remain'] < current_node_cpu and sub.nodes[index]['flow_remain'] < current_node_flow:
+            if sub.nodes[index]['cpu_remain'] < current_node_cpu:
                 filter_prob[index] = 0.0
         action = np.argmax(filter_prob)
 

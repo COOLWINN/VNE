@@ -1,7 +1,7 @@
 import tensorflow as tf
 
 
-class Pnetwork():
+class PolicyModel:
 
     def __init__(self, n_actions, n_features, learning_rate):
 

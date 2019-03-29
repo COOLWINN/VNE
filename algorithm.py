@@ -3,10 +3,10 @@ from evaluation import Evaluation
 from comparison1.grc import GRC
 from comparison2.mcts import MCTS
 from comparison3.reinforce import RL
-from cpu_only.agent1 import Agent1
-from cpu_flow_new.agent2 import Agent2
-from cpu_flow_queue_new.agent3 import Agent3
-from mine.agent import PolicyGradient
+from cpu_no_total.agent1 import Agent1
+from cpu_flow.agent2 import Agent2
+from cpu_flow_queue.agent3 import Agent3
+from cpu_.agent import PolicyGradient
 from network import Network
 import copy
 from event import Event
@@ -39,7 +39,7 @@ class Algorithm:
                        n_actions=sub.number_of_nodes(),
                        n_features=4,
                        learning_rate=0.05,
-                       num_epoch=self.node_arg,
+                       epoch_num=self.node_arg,
                        batch_size=100)
             agent.train(training_set)
 

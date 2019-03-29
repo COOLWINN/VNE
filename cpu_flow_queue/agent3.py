@@ -1,7 +1,7 @@
 import tensorflow as tf
 import numpy as np
 from .my_mdp3 import MyEnv
-from .model3 import Pnetwork
+from model import PolicyModel
 import networkx as nx
 from network import Network
 
@@ -10,19 +10,18 @@ class Agent3:
 
     def __init__(self, action_num, feature_num, learning_rate, reward_decay, episodes):
         self.action_num = action_num
-        self.p_network = Pnetwork(action_num, feature_num, learning_rate)
+        self.p_network = PolicyModel(action_num, feature_num, learning_rate)
         self.gamma = reward_decay
         self.episodes = episodes
         self.ep_obs, self.ep_as, self.ep_rs = [], [], []
         self.sess = tf.Session()
-        self.sess.run(tf.global_variables_initializer())
 
     def train(self, sub, vnr):
         """通过蒙特卡洛采样不断尝试映射该虚拟网络请求，以获得效果最佳的策略网络"""
 
         # 初始化环境
         env = MyEnv(sub, vnr)
-
+        self.sess.run(tf.global_variables_initializer())
         for i_episode in range(self.episodes):
             print('Iteration %s' % i_episode)
             # 重置VNE环境

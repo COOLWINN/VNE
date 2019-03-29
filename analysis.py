@@ -27,7 +27,7 @@ class Analysis:
         self.granularity_lines = ['g-', 'r--', 'b:']
         self.granularity_types = ['cpu', 'cpu, flow', 'cpu, flow, queue']
 
-        self.multi_lines = ['b--', 'r-.', 'g-']
+        self.multi_lines = ['g-', 'b--', 'r-.']
         self.multi_types = ['situation 1', 'situation 2', 'situation 3']
 
     def save_result(self, evaluation, filename):
@@ -45,6 +45,14 @@ class Analysis:
         filename = self.result_dir + 'time.txt'
         with open(filename, 'a') as f:
             f.write("%-10s\t%-20s\n" % (node_arg, runtime))
+
+    def save_loss(self, runtime, epoch_num, loss_average):
+        filename = self.result_dir + 'loss-%s.txt' % epoch_num
+        with open(filename, 'w') as f:
+            f.write("Training time: %s hours\n" % runtime)
+            for value in loss_average:
+                f.write(str(value))
+                f.write('\n')
 
     def read_result(self, filename):
         """读取结果文件"""
@@ -87,9 +95,10 @@ class Analysis:
                 y = results[alg_id][index]
                 plt.plot(x, y, self.algorithm_lines[alg_id], label=self.algorithm_names[alg_id])
             plt.xlim([25000, 50000])
-            # if metric == 'acceptance ratio' or metric == 'node utilization' or metric == 'link utilization':
-            #     plt.ylim([0, 1])
-            plt.ylim([0, 0.5])
+            if metric == 'acceptance ratio' or metric == 'node utilization' or metric == 'link utilization':
+                plt.ylim([0, 1])
+            if metric == 'link utilization':
+                plt.ylim([0, 0.5])
             plt.xlabel("time", fontsize=12)
             plt.ylabel(metric, fontsize=12)
             plt.title(title, fontsize=15)
@@ -113,9 +122,10 @@ class Analysis:
                 y = results[i][index]
                 plt.plot(x, y, self.granularity_lines[i], label=self.granularity_types[i])
             plt.xlim([25000, 50000])
-            if metric == 'acceptance ratio' or metric == 'node utilization' or metric == 'link utilization':
+            if metric == 'acceptance ratio' or metric == 'node utilization':
                 plt.ylim([0, 1])
-            # plt.ylim([0, 0.5])
+            if metric == 'link utilization':
+                plt.ylim([0, 0.5])
             plt.xlabel("time", fontsize=12)
             plt.ylabel(metric, fontsize=12)
             plt.title(title, fontsize=15)
@@ -127,17 +137,18 @@ class Analysis:
         """绘制实验结果图"""
 
         results = []
-        for i in range(6):
-            epochs = (i+5) * 10
+        for i in range(16):
+            epochs = (i+1) * 10
             results.append(self.read_result('ML-VNE-%s.txt' % epochs))
 
         plt.figure()
-        for i in range(6):
+        for i in range(16):
+            epochs = (i + 1) * 10
             x = results[i][0]
             y = results[i][1]
-            plt.plot(x, y, self.epoch_lines[i], label=self.epoch_types[i])
+            plt.plot(x, y, label=epochs)
         plt.xlim([25000, 50000])
-        plt.ylim([0.5, 1])
+        plt.ylim([0.6, 1])
         plt.xlabel("time", fontsize=12)
         plt.ylabel("acceptance ratio", fontsize=12)
         plt.title("Acceptance Ratio", fontsize=15)
@@ -193,6 +204,21 @@ class Analysis:
         plt.ylabel("runtime", fontsize=12)
         plt.show()
 
+    def draw_acc(self, runtime_filename):
+        """绘制时间变化趋势图"""
+
+        with open(self.result_dir + runtime_filename) as f:
+            lines = f.readlines()
+        epochs, accs = [], []
+        for line in lines:
+            epoch, acc = [float(x) for x in line.split()]
+            epochs.append(epoch)
+            accs.append(acc)
+        plt.plot(epochs, accs)
+        plt.xlabel("epoch", fontsize=12)
+        plt.ylabel("acceptance ratio", fontsize=12)
+        plt.show()
+
     def draw_topology(self, graph, filename):
         """绘制网络拓扑图"""
 
@@ -202,5 +228,5 @@ class Analysis:
 
 
 if __name__ == '__main__':
-    analysis = Analysis('results_multi/')
-    analysis.draw_result_multi()
+    analysis = Analysis('results_part/')
+    analysis.draw_runtime('time.txt')

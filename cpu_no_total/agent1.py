@@ -1,7 +1,7 @@
 import tensorflow as tf
 import numpy as np
 from .my_mdp1 import MyEnv
-from .model1 import Pnetwork
+from model import PolicyModel
 import networkx as nx
 from network import Network
 
@@ -10,7 +10,7 @@ class Agent1:
 
     def __init__(self, action_num, feature_num, learning_rate, reward_decay, episodes):
         self.action_num = action_num
-        self.p_network = Pnetwork(action_num, feature_num, learning_rate)
+        self.p_network = PolicyModel(action_num, feature_num, learning_rate)
         self.gamma = reward_decay
         self.episodes = episodes
         self.ep_obs, self.ep_as, self.ep_rs = [], [], []

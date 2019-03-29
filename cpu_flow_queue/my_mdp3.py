@@ -11,7 +11,7 @@ class MyEnv(gym.Env):
     def __init__(self, sub, vnr):
         self.count = -1
         self.action_num = sub.number_of_nodes()
-        self.feature_num = 7
+        self.feature_num = 11
         self.action_space = spaces.Discrete(self.action_num)
         self.observation_space = spaces.Box(low=0, high=1, shape=(self.action_num, self.feature_num), dtype=np.float32)
         self.state = EnvState(sub)

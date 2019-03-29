@@ -5,15 +5,16 @@ import time
 from comparison3.mdp import Env
 import networkx as nx
 from network import Network
+from analysis import Analysis
 
 
 class RL:
 
-    def __init__(self, sub, n_actions, n_features, learning_rate, num_epoch, batch_size):
+    def __init__(self, sub, n_actions, n_features, learning_rate, epoch_num, batch_size):
         self.n_actions = n_actions  # 动作空间大小
         self.n_features = n_features  # 节点向量维度
         self.lr = learning_rate  # 学习速率
-        self.num_epoch = num_epoch  # 训练轮数
+        self.epoch_num = epoch_num  # 训练轮数
         self.batch_size = batch_size  # 批处理的批次大小
 
         self.sub = copy.deepcopy(sub)
@@ -27,7 +28,7 @@ class RL:
         iteration = 0
         start = time.time()
         # 训练开始
-        while iteration < self.num_epoch:
+        while iteration < self.epoch_num:
             values = []
             print("Iteration %s" % iteration)
             # 每轮训练开始前，都需要重置底层网络和相关的强化学习环境
@@ -163,11 +164,8 @@ class RL:
             iteration = iteration + 1
 
         end = (time.time() - start) / 3600
-        with open('results/loss-%s.txt' % self.num_epoch, 'w') as f:
-            f.write("Training time: %s hours\n" % end)
-            for value in loss_average:
-                f.write(str(value))
-                f.write('\n')
+        tool = Analysis('results_single/')
+        tool.save_loss(end, self.epoch_num, loss_average)
 
     def run(self, sub, req):
         """基于训练后的策略网络，直接得到每个虚拟网络请求的节点映射集合"""

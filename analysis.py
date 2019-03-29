@@ -24,13 +24,11 @@ class Analysis:
         self.epoch_lines = ['b-', 'r-', 'y-', 'g-', 'c-', 'm-']
         self.epoch_types = ['50', '60', '70', '80', '90', '100']
 
-        self.resource_lines = ['g-', 'r--',  'b:']
-        self.resource_types = ['cpu', 'cpu, flow', 'cpu, flow, queue']
+        self.granularity_lines = ['g-', 'r--', 'b:']
+        self.granularity_types = ['cpu', 'cpu, flow', 'cpu, flow, queue']
 
         self.multi_lines = ['b--', 'r-.', 'g-']
-        self.multi_types = ['situation 1',
-                            'situation 2',
-                            'situation 3']
+        self.multi_types = ['situation 1', 'situation 2', 'situation 3']
 
     def save_result(self, evaluation, filename):
         """将一段时间内底层网络的性能指标输出到指定文件内"""
@@ -41,9 +39,12 @@ class Analysis:
                 f.write("%-10s\t" % time)
                 f.write("%-20s\t%-20s\t%-20s\t%-20s\t%-20s\t%-20s\n" % evaluation)
 
-    def get_time(self, elem):
-        a, b, c, d, e, f, g = [float(x) for x in elem.split()]
-        return a
+    def save_runtime(self, node_arg, runtime):
+        """将算法的运行时间输出到指定文件内"""
+
+        filename = self.result_dir + 'time.txt'
+        with open(filename, 'a') as f:
+            f.write("%-10s\t%-20s\n" % (node_arg, runtime))
 
     def read_result(self, filename):
         """读取结果文件"""
@@ -51,12 +52,8 @@ class Analysis:
         with open(self.result_dir + filename) as f:
             lines = f.readlines()
 
-        lines.sort(key=self.get_time)
-
         t, acceptance, revenue, cost, r_to_c, node_stress, link_stress = [], [], [], [], [], [], []
-        count = 0
         for line in lines:
-            count = count + 1
             a, b, c, d, e, f, g = [float(x) for x in line.split()]
             t.append(a)
             acceptance.append(b)
@@ -114,7 +111,7 @@ class Analysis:
             for i in range(3):
                 x = results[i][0]
                 y = results[i][index]
-                plt.plot(x, y, self.resource_lines[i], label=self.resource_types[i])
+                plt.plot(x, y, self.granularity_lines[i], label=self.granularity_types[i])
             plt.xlim([25000, 50000])
             if metric == 'acceptance ratio' or metric == 'node utilization' or metric == 'link utilization':
                 plt.ylim([0, 1])
@@ -153,7 +150,7 @@ class Analysis:
 
         results = []
         for i in range(3):
-            index = (i+1) * 100
+            index = (i+1) * 1000
             results.append(self.read_result('ML-VNE-%s.txt' % index))
 
         plt.figure()
@@ -179,6 +176,21 @@ class Analysis:
         for line in lines[1:]:
             loss.append(float(line))
         plt.plot(loss)
+        plt.show()
+
+    def draw_runtime(self, runtime_filename):
+        """绘制时间变化趋势图"""
+
+        with open(self.result_dir + runtime_filename) as f:
+            lines = f.readlines()
+        epochs, runtimes = [], []
+        for line in lines:
+            epoch, runtime = [float(x) for x in line.split()]
+            epochs.append(epoch)
+            runtimes.append(runtime)
+        plt.plot(epochs, runtimes)
+        plt.xlabel("epoch", fontsize=12)
+        plt.ylabel("runtime", fontsize=12)
         plt.show()
 
     def draw_topology(self, graph, filename):

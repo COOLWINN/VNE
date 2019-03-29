@@ -1,21 +1,11 @@
-import copy
 import networkx as nx
 from itertools import islice
 
 
 class Network:
+
     def __init__(self, path):
         self.files_dir = path
-
-    def get_networks(self, sub_filename, req_num, child_req_num, granularity=1):
-        """读取 req_num 个虚拟网络及 req_num*child_num 个子虚拟网络请求，构成底层虚拟网络请求事件队列和子虚拟网络请求事件队列"""
-        # 底层物理网络
-        sub = self.read_network_file(sub_filename, granularity)
-        # 第1层虚拟网络请求
-        queue1 = self.get_reqs(req_num, granularity)
-        # 第2层虚拟网络请求
-        queue2 = self.get_child_reqs(req_num, child_req_num, granularity)
-        return sub, queue1, queue2
 
     def get_networks_single_layer(self, sub_filename, req_num, granularity=1):
         """读取 req_num 个虚拟网络及 req_num*child_num 个子虚拟网络请求，构成底层虚拟网络请求事件队列和子虚拟网络请求事件队列"""
@@ -26,11 +16,21 @@ class Network:
         for i in range(req_num):
             i = i + 1000
             filename = 'req%d.txt' % i
-            req_arrive = self.read_network_file(filename, granularity)
-            req_arrive.graph['parent'] = -1
-            req_arrive.graph['id'] = i
-            requests.append(req_arrive)
+            req = self.read_network_file(filename, granularity)
+            req.graph['parent'] = -1
+            req.graph['id'] = i
+            requests.append(req)
         return sub, requests
+
+    def get_networks(self, sub_filename, req_num, child_req_num, granularity=1):
+        """读取 req_num 个虚拟网络及 req_num*child_num 个子虚拟网络请求，构成底层虚拟网络请求事件队列和子虚拟网络请求事件队列"""
+        # 底层物理网络
+        sub = self.read_network_file(sub_filename, granularity)
+        # 第1层虚拟网络请求
+        queue1 = self.get_reqs(req_num, granularity)
+        # 第2层虚拟网络请求
+        queue2 = self.get_child_reqs(req_num, child_req_num, granularity)
+        return sub, queue1, queue2
 
     def get_reqs(self, req_num, granularity=1):
         """读取req_num个虚拟网络请求文件，构建虚拟网络请求事件队列"""

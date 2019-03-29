@@ -11,34 +11,37 @@ import tensorflow as tf
 def main():
 
     # Step1: 读取底层网络和虚拟网络请求文件
+    results_dir = 'results_epoch/'
+    tool = Analysis(results_dir)
+
     network_files_dir = 'networks/'
-    results_dir = 'results_single/'
     sub_filename = 'sub-wm.txt'
     networks = Network(network_files_dir)
     substrate, requests = networks.get_networks_single_layer(sub_filename, 1000)
 
-    with open(results_dir + 'time.txt', 'a') as f:
+    for i in range(20):
 
-        # Step1: 模拟虚拟网络请求事件队列
+        # Step1: 数据准备
+        sub = copy.deepcopy(substrate)
         events = PriorityQueue()
         for req in requests:
             events.put(Event(req))
 
-        # Step2: 配置映射算法
-        node_arg = 150
-        algorithm = Algorithm('ml', node_arg=node_arg, link_arg=5)
-
         start = time.time()
-        # Step3: 依次处理虚拟网络请求事件
+        tf.reset_default_graph()
         with tf.Session() as sess:
-            algorithm.configure(substrate, sess)
-            algorithm.handle(substrate, events)
+            # Step2: 配置映射算法
+            node_arg = (i + 1) * 10
+            algorithm = Algorithm('ml', node_arg=node_arg, link_arg=5)
+            algorithm.configure(sub, sess)
+            # Step3: 处理虚拟网络请求事件
+            algorithm.handle(sub, events)
+        tf.get_default_graph().finalize()
         runtime = time.time() - start
-        f.write("%-10s\t%-20s\n" % (node_arg, runtime))
 
-        # Step4: 输出映射结果文件
-        tool = Analysis(results_dir)
-        tool.save_result(algorithm.evaluation, 'ML-VNE-old-%s.txt' % node_arg)
+        # Step4: 统计映射结果
+        tool.save_runtime(node_arg, runtime)
+        tool.save_result(algorithm.evaluation, 'ML-VNE-%s.txt' % node_arg)
 
 
 if __name__ == '__main__':

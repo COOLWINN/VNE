@@ -30,7 +30,7 @@ def main():
 
     # Step4: 输出映射结果文件
     tool = Analysis('results_single/')
-    tool.save_result(algorithm.evaluation, 'ML-VNE-0327-one-6.txt')
+    tool.save_result(algorithm.evaluation, 'ML-VNE-0329-c.txt')
 
 
 if __name__ == '__main__':

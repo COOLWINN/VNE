@@ -9,6 +9,8 @@ venv/
 networks/
 networks-multi/
 results/
-results_single/
+results_epoch/
 results_multi/
+results_serial/
+results_single/
 

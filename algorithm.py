@@ -4,8 +4,8 @@ from comparison1.grc import GRC
 from comparison2.mcts import MCTS
 from comparison3.reinforce import RL
 from cpu_only.agent1 import Agent1
-from cpu_flow.agent2 import Agent2
-from cpu_flow_queue.agent3 import Agent3
+from cpu_flow_new.agent2 import Agent2
+from cpu_flow_queue_new.agent3 import Agent3
 from mine.agent import PolicyGradient
 from network import Network
 import copy
@@ -21,30 +21,27 @@ class Algorithm:
         self.link_arg = link_arg
         self.evaluation = None
 
-    def configure(self, sub):
+    def configure(self, sub, sess=None):
 
         self.evaluation = Evaluation(sub)
 
         if self.name == 'grc':
-            grc = GRC(damping_factor=0.9, sigma=1e-6)
-            self.agent = grc
+            agent = GRC(damping_factor=0.9, sigma=1e-6)
 
         elif self.name == 'mcts':
-            mcts = MCTS(computation_budget=5, exploration_constant=0.5)
-            self.agent = mcts
+            agent = MCTS(computation_budget=5, exploration_constant=0.5)
 
         elif self.name == 'rl':
             training_set_path = 'comparison3/training_set/'
             networks = Network(training_set_path)
             training_set = networks.get_reqs(1000)
-            rl = RL(sub=sub,
-                    n_actions=sub.number_of_nodes(),
-                    n_features=4,
-                    learning_rate=0.05,
-                    num_epoch=self.node_arg,
-                    batch_size=100)
-            rl.train(training_set)
-            self.agent = rl
+            agent = RL(sub=sub,
+                       n_actions=sub.number_of_nodes(),
+                       n_features=4,
+                       learning_rate=0.05,
+                       num_epoch=self.node_arg,
+                       batch_size=100)
+            agent.train(training_set)
 
         elif self.name == 'ml_1':
             agent = Agent1(action_num=sub.number_of_nodes(),
@@ -52,33 +49,31 @@ class Algorithm:
                            learning_rate=0.02,
                            reward_decay=0.95,
                            episodes=self.node_arg)
-            self.agent = agent
 
         elif self.name == 'ml_2':
             agent = Agent2(action_num=sub.number_of_nodes(),
-                           feature_num=6,
+                           feature_num=9,
                            learning_rate=0.02,
                            reward_decay=0.95,
                            episodes=self.node_arg)
-            self.agent = agent
 
         elif self.name == 'ml_3':
             agent = Agent3(action_num=sub.number_of_nodes(),
-                           feature_num=7,
+                           feature_num=11,
                            learning_rate=0.02,
                            reward_decay=0.95,
                            episodes=self.node_arg)
-            self.agent = agent
 
         else:
-            agent = PolicyGradient(action_num=sub.number_of_nodes(),
+            agent = PolicyGradient(sess=sess,
+                                   action_num=sub.number_of_nodes(),
                                    feature_num=7,
                                    learning_rate=0.02,
                                    reward_decay=0.95,
                                    episodes=self.node_arg)
-            self.agent = agent
+        self.agent = agent
 
-    def handle(self, sub, events, requests):
+    def handle(self, sub, events, requests=None):
 
         total, success = 0, 0
 

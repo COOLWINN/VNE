@@ -77,13 +77,8 @@ class Analysis:
         """绘制实验结果图"""
 
         results = []
+
         for alg in self.algorithm_names:
-            # if alg == 'MCTS-VNE':
-            #     results.append(self.read_result('ML-VNE-simple.txt'))
-            # elif alg == 'ML-VNE-simple':
-            #     results.append(self.read_result('MCTS-VNE-old.txt'))
-            # else:
-            #     results.append(self.read_result(alg + '.txt'))
             results.append(self.read_result(alg + '.txt'))
 
         index = 0
@@ -199,6 +194,7 @@ class Analysis:
             epoch, runtime = [float(x) for x in line.split()]
             epochs.append(epoch)
             runtimes.append(runtime)
+        runtimes.sort()
         plt.plot(epochs, runtimes)
         plt.xlabel("epoch", fontsize=12)
         plt.ylabel("runtime", fontsize=12)
@@ -228,5 +224,5 @@ class Analysis:
 
 
 if __name__ == '__main__':
-    analysis = Analysis('results_part/')
-    analysis.draw_runtime('time.txt')
+    analysis = Analysis('results_epoch/')
+    analysis.draw_runtime('acc.txt')

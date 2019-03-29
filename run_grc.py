@@ -3,10 +3,10 @@ from analysis import Analysis
 
 
 if __name__ == '__main__':
+
     tool = Analysis('results_ts/')
-    name = 'ML'
-    algorithm = Algorithm(name, node_arg=50, link_arg=5)
+    algorithm = Algorithm('GRC', link_arg=1)
     runtime = algorithm.execute(network_path='networks/',
                                 sub_filename='sub-ts.txt')
-    tool.save_result(algorithm.evaluation, '%s-VNE.txt' % name)
+    tool.save_result(algorithm.evaluation, '%s-VNE.txt' % 'GRC')
     print(runtime)

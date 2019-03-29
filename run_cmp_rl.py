@@ -2,7 +2,7 @@ import time
 from network import Network
 from analysis import Analysis
 from algorithm import Algorithm
-from queue import PriorityQueue as PQ
+from queue import PriorityQueue
 from event import Event
 
 
@@ -10,10 +10,10 @@ def main():
 
     # Step1: 读取底层网络和虚拟网络请求文件
     network_files_dir = 'networks/'
-    sub_filename = 'sub-wm.txt'
+    sub_filename = 'sub-ts.txt'
     networks = Network(network_files_dir)
     sub, requests = networks.get_networks_single_layer(sub_filename, 1000)
-    events = PQ()
+    events = PriorityQueue()
     for req in requests:
         events.put(Event(req))
 
@@ -25,13 +25,13 @@ def main():
 
     # Step3: 处理虚拟网络请求事件
     start = time.time()
-    algorithm.handle(sub, events, requests)
-    time_cost = time.time() - start
-    print(time_cost)
+    algorithm.handle(sub, events)
+    runtime = time.time() - start
+    print(runtime)
 
     # Step4: 输出映射结果文件
-    tool = Analysis('results_single/')
-    tool.save_result(algorithm.evaluation, 'RL-VNE-0326-%s.txt' % node_arg)
+    tool = Analysis('results_ts/')
+    tool.save_result(algorithm.evaluation, 'RL-VNE.txt')
 
 
 if __name__ == '__main__':

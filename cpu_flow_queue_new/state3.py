@@ -14,7 +14,7 @@ class EnvState:
         self.cpu_remain = self.cpu
         self.flow_remain = self.flow
         self.queue_remain = self.queue
-        self.adjacent_bw_remain = self.adjacent_bw_remain
+        self.adjacent_bw_remain = self.adjacent_bw
         self.degree_centrality = self.calculate_degree_centrality()
         self.closeness_centrality = self.calculate_closeness_centrality()
         self.betweeness_centrality = self.calculate_betweeness_centrality()

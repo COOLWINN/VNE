@@ -138,7 +138,7 @@ class Constructor:
 
                 # 属于transit-stub模型网络的特殊操作
                 if network_name == 'sub-ts' and len(coordinates) <= transit_nodes:
-                    network_file.write("%d %d %f %f %f\n" % (x, y, 100 + cpu, 100+flow, 100+queue))
+                    network_file.write("%d %d %f %f %f\n" % (x, y, 50+cpu, 50+flow, 50+queue))
                     continue
 
                 network_file.write("%d %d %f %f %f\n" % (x, y, cpu, flow, queue))
@@ -152,10 +152,10 @@ class Constructor:
                 # 属于transit-stub模型网络的特殊操作
                 if network_name == 'sub-ts':
                     if from_id < transit_nodes and to_id < transit_nodes:
-                        network_file.write("%d %d %f %f\n" % (from_id, to_id, 200 + bw, distance))
+                        network_file.write("%d %d %f %f\n" % (from_id, to_id, 100 + bw, distance))
                         continue
                     if from_id < transit_nodes or to_id < transit_nodes:
-                        network_file.write("%d %d %f %f\n" % (from_id, to_id, 100 + bw, distance))
+                        network_file.write("%d %d %f %f\n" % (from_id, to_id, 50 + bw, distance))
                         continue
 
                 network_file.write("%d %d %f %f\n" % (from_id, to_id, bw, distance))
@@ -168,13 +168,13 @@ class Constructor:
 
 if __name__ == '__main__':
 
-    constructor = Constructor('networks-multi/')
+    constructor = Constructor('networks/')
 
     # 生成节点数为100，连通率为0.5的随机型物理网络
-    constructor.make_sub_wm(100, 50, 100)
+    # constructor.make_sub_wm(100, 50, 100)
 
     # 生成节点数为1×4×(1+3×8)=100，连通率为0.5的Transit-Stub型物理网络
-    # make_sub_ts(1, 3, 4, 8, 50, 100)
+    constructor.make_sub_ts(1, 3, 4, 8, 50, 100)
 
     # 用于单级映射场景
     # 平均每1000个时间单位内到达40个虚拟网络请求，且虚拟节点数服从2~10的均匀分布，请求资源服从0~50的均匀分布
@@ -182,4 +182,4 @@ if __name__ == '__main__':
 
     # 用于多级级映射场景
     # 平均每1000个时间单位内到达8个虚拟网络请求， 每个虚拟网络请求拥有4个子请求，且虚拟节点数服从10~20的均匀分布，请求资源服从25~50的均匀分布
-    constructor.make_batch_req(8, 4, 10, 20, 25, 50)
+    # constructor.make_batch_req(8, 4, 10, 20, 25, 50)

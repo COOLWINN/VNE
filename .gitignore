@@ -9,6 +9,7 @@ venv/
 results/
 results_algorithm/
 results_epoch/
+results_epoch_new/
 results_granularity/
 results_multi/
 results_single/

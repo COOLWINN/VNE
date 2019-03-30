@@ -19,7 +19,7 @@ def main():
     networks = Network(network_files_dir)
     substrate, requests = networks.get_networks_single_layer(sub_filename, 1000)
 
-    for i in range(20):
+    for i in range(100):
 
         # Step1: 数据准备
         sub = copy.deepcopy(substrate)
@@ -32,16 +32,16 @@ def main():
         with tf.Session() as sess:
             # Step2: 配置映射算法
             node_arg = (i + 1) * 10
-            algorithm = Algorithm('ml', node_arg=node_arg, link_arg=5)
+            algorithm = Algorithm('ML', node_arg=node_arg, link_arg=5)
             algorithm.configure(sub, sess)
             # Step3: 处理虚拟网络请求事件
-            algorithm.handle(sub, events)
+            acc = algorithm.handle(sub, events)
         tf.get_default_graph().finalize()
         runtime = time.time() - start
 
         # Step4: 统计映射结果
-        tool.save_runtime(node_arg, runtime)
-        tool.save_result(algorithm.evaluation, 'ML-VNE-%s.txt' % node_arg)
+        tool.save_epoch(node_arg, acc, runtime)
+        tool.save_result(algorithm.evaluation, '%s.txt' % node_arg)
 
 
 if __name__ == '__main__':

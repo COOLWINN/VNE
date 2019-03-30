@@ -117,6 +117,7 @@ class Algorithm:
 
             if parent_id == -1:
                 if req.graph['type'] == 0:
+                    self.evaluation.total_arrived += 1
                     print("\nTry to map request%s: " % req_id)
                     if self.mapping(sub, req):
                         req_leave = copy.deepcopy(req)
@@ -142,15 +143,14 @@ class Algorithm:
                         success = success + 1
                     else:
                         print("Failure")
-
-        print("accepted requests: %s" % str(self.evaluation.total_accepted - success))
+        accepted_num = self.evaluation.total_accepted - success
+        print("accepted requests: %s" % accepted_num)
         print("arrived child requests: %s" % total)
         print("accepted child requests: %s" % success)
+        return accepted_num / self.evaluation.total_arrived
 
     def mapping(self, sub, req):
         """two phrases:node mapping and link mapping"""
-
-        self.evaluation.total_arrived += 1
 
         # mapping virtual nodes
         node_map = self.node_mapping(sub, req)

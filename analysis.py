@@ -39,12 +39,12 @@ class Analysis:
                 f.write("%-10s\t" % time)
                 f.write("%-20s\t%-20s\t%-20s\t%-20s\t%-20s\t%-20s\n" % evaluation)
 
-    def save_runtime(self, node_arg, runtime):
-        """将算法的运行时间输出到指定文件内"""
+    def save_epoch(self, epoch, acc, runtime):
+        """保存不同采样次数的实验结果"""
 
-        filename = self.result_dir + 'time.txt'
+        filename = self.result_dir + 'epoch.txt'
         with open(filename, 'a') as f:
-            f.write("%-10s\t%-20s\n" % (node_arg, runtime))
+            f.write("%-10s\t%-20s\t%-20s\n" % (epoch, acc, runtime))
 
     def save_loss(self, runtime, epoch_num, loss_average):
         filename = self.result_dir + 'loss-%s.txt' % epoch_num
@@ -98,8 +98,8 @@ class Analysis:
             plt.ylabel(metric, fontsize=12)
             plt.title(title, fontsize=15)
             plt.legend(loc='best', fontsize=12)
-            # plt.savefig(self.result_dir + metric + '.png')
-        plt.show()
+            plt.savefig(self.result_dir + metric + '.png')
+        # plt.show()
 
     def draw_result_granularity(self):
         """绘制实验结果图"""
@@ -184,18 +184,19 @@ class Analysis:
         plt.plot(loss)
         plt.show()
 
-    def draw_runtime(self, runtime_filename):
+    def draw_epoch(self):
         """绘制时间变化趋势图"""
 
-        with open(self.result_dir + runtime_filename) as f:
+        with open(self.result_dir + 'epoch.txt') as f:
             lines = f.readlines()
-        epochs, runtimes = [], []
+        epoch, acc, runtime = [], [], []
         for line in lines:
-            epoch, runtime = [float(x) for x in line.split()]
-            epochs.append(epoch)
-            runtimes.append(runtime)
-        runtimes.sort()
-        plt.plot(epochs, runtimes)
+            a, b, c = [float(x) for x in line.split()]
+            epoch.append(a)
+            acc.append(b)
+            runtime.append(c)
+        runtime.sort()
+        plt.plot(epoch, runtime)
         plt.xlabel("epoch", fontsize=12)
         plt.ylabel("runtime", fontsize=12)
         plt.show()
@@ -224,5 +225,5 @@ class Analysis:
 
 
 if __name__ == '__main__':
-    analysis = Analysis('results_epoch/')
-    analysis.draw_runtime('acc.txt')
+    analysis = Analysis('results_algorithm/')
+    analysis.draw_result_algorithms()

@@ -7,52 +7,40 @@ class Network:
     def __init__(self, path):
         self.files_dir = path
 
-    def get_networks_single_layer(self, sub_filename, req_num, granularity=1):
-        """读取 req_num 个虚拟网络及 req_num*child_num 个子虚拟网络请求，构成底层虚拟网络请求事件队列和子虚拟网络请求事件队列"""
-        # 底层物理网络
-        sub = self.read_network_file(sub_filename, granularity)
-        # 虚拟网络请求
-        requests = []
-        for i in range(req_num):
-            i = i + 1000
-            filename = 'req%d.txt' % i
-            req = self.read_network_file(filename, granularity)
-            req.graph['parent'] = -1
-            req.graph['id'] = i
-            requests.append(req)
-        return sub, requests
-
-    def get_networks(self, sub_filename, req_num, child_req_num, granularity=1):
+    def get_networks(self, sub_filename, req_num, child_num=0, granularity=1):
         """读取 req_num 个虚拟网络及 req_num*child_num 个子虚拟网络请求，构成底层虚拟网络请求事件队列和子虚拟网络请求事件队列"""
         # 底层物理网络
         sub = self.read_network_file(sub_filename, granularity)
         # 第1层虚拟网络请求
         queue1 = self.get_reqs(req_num, granularity)
         # 第2层虚拟网络请求
-        queue2 = self.get_child_reqs(req_num, child_req_num, granularity)
+        queue2 = self.get_child_reqs(req_num, child_num, granularity)
         return sub, queue1, queue2
 
     def get_reqs(self, req_num, granularity=1):
         """读取req_num个虚拟网络请求文件，构建虚拟网络请求事件队列"""
         queue = []
+        offset = 2000-req_num
         for i in range(req_num):
-            filename = 'req%d.txt' % i
-            req_arrive = self.read_network_file(filename, granularity)
-            req_arrive.graph['parent'] = -1
-            req_arrive.graph['id'] = i
-            queue.append(req_arrive)
+            index = i + offset
+            filename = 'req%d.txt' % index
+            req = self.read_network_file(filename, granularity)
+            req.graph['parent'] = -1
+            req.graph['id'] = index
+            queue.append(req)
         return queue
 
     def get_child_reqs(self, req_num, child_req_num, granularity):
         """读取子虚拟网络请求文件，构建子虚拟网络请求事件队列"""
         queue = []
-        for i in range(req_num):
-            for j in range(child_req_num):
-                child_req_filename = 'req%d-%d.txt' % (i, j)
-                child_req = self.read_network_file(child_req_filename, granularity)
-                child_req.graph['parent'] = i
-                child_req.graph['id'] = j
-                queue.append(child_req)
+        if child_req_num != 0:
+            for i in range(req_num):
+                for j in range(child_req_num):
+                    child_req_filename = 'req%d-%d.txt' % (i, j)
+                    child_req = self.read_network_file(child_req_filename, granularity)
+                    child_req.graph['parent'] = i
+                    child_req.graph['id'] = j
+                    queue.append(child_req)
         return queue
 
     def read_network_file(self, filename, granularity=1):
@@ -64,56 +52,45 @@ class Network:
         with open(self.files_dir + filename) as f:
             lines = f.readlines()
 
+        # Step 1: 获取网络节点数量和链路数量，并根据网络类型进行初始化
         if len(lines[0].split()) == 2:
-            """create a substrate network"""
-
+            """物理网络"""
             node_num, link_num = [int(x) for x in lines[0].split()]
             graph = nx.Graph(mapped_info=mapped_info)
-            for line in lines[1: node_num + 1]:
-                x, y, c, f, q = [float(x) for x in line.split()]
-                if granularity == 1:
-                    graph.add_node(node_id, x_coordinate=x, y_coordinate=y,
-                                   cpu=c, cpu_remain=c)
-                elif granularity == 2:
-                    graph.add_node(node_id, x_coordinate=x, y_coordinate=y,
-                                   cpu=c, cpu_remain=c,
-                                   flow=f, flow_remain=f)
-                else:
-                    graph.add_node(node_id, x_coordinate=x, y_coordinate=y,
-                                   cpu=c, cpu_remain=c,
-                                   flow=f, flow_remain=f,
-                                   queue=q, queue_remain=q)
-                node_id = node_id + 1
-
-            for line in lines[-link_num:]:
-                src, dst, bw, dis = [float(x) for x in line.split()]
-                graph.add_edge(int(src), int(dst), link_id=link_id, bw=bw, bw_remain=bw, distance=dis)
-                link_id = link_id + 1
         else:
-            """create a virtual network"""
+            """虚拟网络"""
             node_num, link_num, time, duration, max_dis = [int(x) for x in lines[0].split()]
             graph = nx.Graph(type=0, time=time, duration=duration, mapped_info=mapped_info)
-            for line in lines[1:node_num + 1]:
-                x, y, c, f, q = [float(x) for x in line.split()]
-                if granularity == 1:
-                    graph.add_node(node_id, x_coordinate=x, y_coordinate=y,
-                                   cpu=c, cpu_remain=c)
-                elif granularity == 2:
-                    graph.add_node(node_id, x_coordinate=x, y_coordinate=y,
-                                   cpu=c, cpu_remain=c,
-                                   flow=f, flow_remain=f)
-                else:
-                    graph.add_node(node_id, x_coordinate=x, y_coordinate=y,
-                                   cpu=c, cpu_remain=c,
-                                   flow=f, flow_remain=f,
-                                   queue=q, queue_remain=q)
-                node_id = node_id + 1
 
-            for line in lines[-link_num:]:
-                src, dst, bw, dis = [float(x) for x in line.split()]
-                graph.add_edge(int(src), int(dst), link_id=link_id, bw=bw, bw_remain=bw, distance=dis)
-                link_id = link_id + 1
+        # Step 2: 依次读取节点信息
+        for line in lines[1: node_num + 1]:
 
+            x, y, c, f, q = [float(x) for x in line.split()]
+            if granularity == 1:
+                graph.add_node(node_id,
+                               x_coordinate=x, y_coordinate=y,
+                               cpu=c, cpu_remain=c)
+            elif granularity == 2:
+                graph.add_node(node_id,
+                               x_coordinate=x, y_coordinate=y,
+                               cpu=c, cpu_remain=c,
+                               flow=f, flow_remain=f)
+            else:
+                graph.add_node(node_id,
+                               x_coordinate=x, y_coordinate=y,
+                               cpu=c, cpu_remain=c,
+                               flow=f, flow_remain=f,
+                               queue=q, queue_remain=q)
+            node_id = node_id + 1
+
+        # Step 3: 依次读取链路信息
+        for line in lines[-link_num:]:
+            """依次读取链路信息"""
+            src, dst, bw, dis = [float(x) for x in line.split()]
+            graph.add_edge(int(src), int(dst), link_id=link_id, bw=bw, bw_remain=bw, distance=dis)
+            link_id = link_id + 1
+
+        # Step 4: 返回网络实例
         return graph
 
     @staticmethod

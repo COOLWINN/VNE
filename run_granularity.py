@@ -6,8 +6,10 @@ if __name__ == '__main__':
     tool = Analysis('results_granularity/')
     for i in range(3):
         granularity = i + 1
-        algorithm = Algorithm('ML%d' % granularity, node_arg=50, link_arg=5-i)
+        algorithm = Algorithm('ML%d' % granularity,
+                              node_arg=50,
+                              link_arg=5-i,
+                              granularity=granularity)
         algorithm.execute(network_path='networks/',
-                          sub_filename='sub-wm.txt',
-                          granularity=granularity)
+                          sub_filename='sub-wm.txt')
         tool.save_evaluations(algorithm.evaluation, '%s.txt' % granularity)

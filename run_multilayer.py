@@ -13,8 +13,7 @@ def main():
     network_files_dir = 'networks-multi/'
     sub_filename = 'sub-wm.txt'
     networks = Network(network_files_dir)
-    sub, requests, child_requests = networks.get_networks(sub_filename, req_num=400, child_req_num=0)
-    print(len(child_requests))
+    sub, requests, child_requests = networks.get_networks(sub_filename, req_num=400, child_num=0)
     events = PriorityQueue()
     for req in requests:
         events.put(Event(req))

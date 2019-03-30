@@ -17,16 +17,17 @@ import tensorflow as tf
 
 class Algorithm:
 
-    def __init__(self, name, node_arg=10, link_arg=1):
+    def __init__(self, name, node_arg=10, link_arg=1, granularity=1):
         self.name = name
         self.agent = None
         self.node_arg = node_arg
         self.link_arg = link_arg
+        self.granularity = granularity
         self.evaluation = Evaluation()
 
-    def execute(self, network_path, sub_filename, granularity=1):
+    def execute(self, network_path, sub_filename, req_num=1000, child_num=0):
         networks = Network(network_path)
-        sub, requests = networks.get_networks_single_layer(sub_filename, 1000, granularity)
+        sub, requests, children = networks.get_networks(sub_filename, req_num, child_num, self.granularity)
         events = PriorityQueue()
         for req in requests:
             events.put(Event(req))

@@ -17,7 +17,7 @@ import tensorflow as tf
 
 class Algorithm:
 
-    def __init__(self, name, node_arg=0, link_arg=1):
+    def __init__(self, name, node_arg=10, link_arg=1):
         self.name = name
         self.agent = None
         self.node_arg = node_arg

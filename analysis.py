@@ -30,7 +30,7 @@ class Analysis:
         self.multi_lines = ['g-', 'b--', 'r-.']
         self.multi_types = ['situation 1', 'situation 2', 'situation 3']
 
-    def save_result(self, evaluation, filename):
+    def save_evaluations(self, evaluation, filename):
         """将一段时间内底层网络的性能指标输出到指定文件内"""
 
         filename = self.result_dir + filename

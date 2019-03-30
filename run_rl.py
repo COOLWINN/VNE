@@ -7,5 +7,5 @@ if __name__ == '__main__':
     algorithm = Algorithm(name, node_arg=10, link_arg=1)
     runtime = algorithm.execute(network_path='networks/',
                                 sub_filename='sub-wm.txt')
-    tool.save_result(algorithm.evaluation, '%s-VNE.txt' % name)
+    tool.save_evaluations(algorithm.evaluation, '%s-VNE.txt' % name)
     print(runtime)

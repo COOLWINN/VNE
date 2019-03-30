@@ -1,10 +1,12 @@
 class Evaluation:
-    def __init__(self, net):
-        self.net = net
-        # 到达的虚拟网络请求数
+    def __init__(self):
+
+        # 处理的虚拟网络请求数
         self.total_arrived = 0
         # 成功接受的虚拟网络请求数
         self.total_accepted = 0
+        # 请求接受率
+        self.acc_ratio = 0
         # 总收益
         self.total_revenue = 0
         # 总成本
@@ -16,15 +18,16 @@ class Evaluation:
         # 每个时刻对应的性能指标元组（请求接受率、平均收益、平均成本、收益成本比、平均节点利用率、平均链路利用率）
         self.metrics = {}
 
-    def collect(self, req, link_map=None):
+    def collect(self, sub, req, link_map=None):
         """增加对应的评估指标值"""
         self.total_accepted += 1
+        self.acc_ratio = self.total_accepted/self.total_arrived
         if link_map is not None:
             self.total_revenue += self.calcualte_revenue(req)
             self.total_cost += self.calculate_cost(req, link_map)
-            self.average_node_stress += self.calculate_ans()
-            self.average_link_stress += self.calculate_als()
-        self.metrics.update({req.graph['time']: (self.total_accepted / self.total_arrived,
+            self.average_node_stress += self.calculate_ans(sub)
+            self.average_link_stress += self.calculate_als(sub)
+        self.metrics.update({req.graph['time']: (self.acc_ratio,
                                                  self.total_revenue,
                                                  self.total_cost,
                                                  self.total_revenue / self.total_cost,
@@ -51,18 +54,18 @@ class Evaluation:
             cost += link_resource * (len(path) - 1)
         return cost
 
-    def calculate_ans(self):
+    def calculate_ans(self, sub):
         """节点资源利用率"""
         node_stress = 0
-        for i in range(self.net.number_of_nodes()):
-            node_stress += 1 - self.net.nodes[i]['cpu_remain'] / self.net.nodes[i]['cpu']
-        node_stress /= self.net.number_of_nodes()
+        for i in range(sub.number_of_nodes()):
+            node_stress += 1 - sub.nodes[i]['cpu_remain'] / sub.nodes[i]['cpu']
+        node_stress /= sub.number_of_nodes()
         return node_stress
 
-    def calculate_als(self):
+    def calculate_als(self, sub):
         """链路资源利用率"""
         link_stress = 0
-        for vl in self.net.edges:
-            link_stress += 1 - self.net[vl[0]][vl[1]]['bw_remain'] / self.net[vl[0]][vl[1]]['bw']
-        link_stress /= self.net.number_of_edges()
+        for vl in sub.edges:
+            link_stress += 1 - sub[vl[0]][vl[1]]['bw_remain'] / sub[vl[0]][vl[1]]['bw']
+        link_stress /= sub.number_of_edges()
         return link_stress

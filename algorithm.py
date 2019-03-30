@@ -22,7 +22,7 @@ class Algorithm:
         self.agent = None
         self.node_arg = node_arg
         self.link_arg = link_arg
-        self.evaluation = None
+        self.evaluation = Evaluation()
 
     def execute(self, network_path, sub_filename, granularity=1):
         networks = Network(network_path)
@@ -40,8 +40,6 @@ class Algorithm:
         return runtime
 
     def configure(self, sub, sess=None):
-
-        self.evaluation = Evaluation(sub)
 
         if self.name == 'GRC':
             agent = GRC(damping_factor=0.9, sigma=1e-6)
@@ -107,7 +105,7 @@ class Algorithm:
 
     def handle(self, sub, events, requests=None):
 
-        total, success = 0, 0
+        child_algorithm = Algorithm('MCTS', link_arg=5)
 
         while not events.empty():
 
@@ -117,7 +115,6 @@ class Algorithm:
 
             if parent_id == -1:
                 if req.graph['type'] == 0:
-                    self.evaluation.total_arrived += 1
                     print("\nTry to map request%s: " % req_id)
                     if self.mapping(sub, req):
                         req_leave = copy.deepcopy(req)
@@ -132,25 +129,23 @@ class Algorithm:
 
             else:
                 if parent_id in sub.graph['mapped_info'].keys():
-                    child_algorithm = Algorithm('mcts', link_arg=5)
                     child_algorithm.configure(req)
                     print("\nTry to map the %sth upper request onto virtual network %s: " % (req_id, parent_id))
-                    total = total + 1
                     self.evaluation.total_arrived += 1
                     if child_algorithm.mapping(requests[parent_id], req):
                         print("Success!")
-                        self.evaluation.collect(req)
-                        success = success + 1
+                        self.evaluation.collect(requests[parent_id], req)
                     else:
                         print("Failure")
-        accepted_num = self.evaluation.total_accepted - success
+        accepted_num = self.evaluation.total_accepted - child_algorithm.evaluation.total_accepted
         print("accepted requests: %s" % accepted_num)
-        print("arrived child requests: %s" % total)
-        print("accepted child requests: %s" % success)
-        return accepted_num / self.evaluation.total_arrived
+        print("arrived child requests: %s" % child_algorithm.evaluation.total_arrived)
+        print("accepted child requests: %s" % child_algorithm.evaluation.total_accepted)
 
     def mapping(self, sub, req):
         """two phrases:node mapping and link mapping"""
+
+        self.evaluation.total_arrived += 1
 
         # mapping virtual nodes
         node_map = self.node_mapping(sub, req)
@@ -231,7 +226,7 @@ class Algorithm:
 
         if instruction == 'allocate':
             # 增加实验结果
-            self.evaluation.collect(req, link_map)
+            self.evaluation.collect(sub, req, link_map)
 
         if instruction == 'release':
             # 移除相应的映射信息

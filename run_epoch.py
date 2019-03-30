@@ -31,17 +31,17 @@ def main():
         tf.reset_default_graph()
         with tf.Session() as sess:
             # Step2: 配置映射算法
-            node_arg = (i + 1) * 10
-            algorithm = Algorithm('ML', node_arg=node_arg, link_arg=5)
+            epoch = (i + 1) * 10
+            algorithm = Algorithm('ML', node_arg=epoch, link_arg=5)
             algorithm.configure(sub, sess)
             # Step3: 处理虚拟网络请求事件
-            acc = algorithm.handle(sub, events)
+            algorithm.handle(sub, events)
         tf.get_default_graph().finalize()
         runtime = time.time() - start
 
         # Step4: 统计映射结果
-        tool.save_epoch(node_arg, acc, runtime)
-        tool.save_result(algorithm.evaluation, '%s.txt' % node_arg)
+        tool.save_result(algorithm.evaluation, '%s.txt' % epoch)
+        tool.save_epoch(epoch, algorithm.evaluation.acc_ratio, runtime)
 
 
 if __name__ == '__main__':

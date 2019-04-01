@@ -138,7 +138,7 @@ class Constructor:
 
                 # 属于transit-stub模型网络的特殊操作
                 if network_name == 'sub-ts' and len(coordinates) <= transit_nodes:
-                    network_file.write("%d %d %f %f %f\n" % (x, y, 50+cpu, 50+flow, 50+queue))
+                    network_file.write("%d %d %f %f %f\n" % (x, y, 100+cpu, 100+flow, 100+queue))
                     continue
 
                 network_file.write("%d %d %f %f %f\n" % (x, y, cpu, flow, queue))

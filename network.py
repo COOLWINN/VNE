@@ -30,6 +30,17 @@ class Network:
             queue.append(req)
         return queue
 
+    def get_reqs_for_train(self, req_num, granularity=1):
+        """读取req_num个虚拟网络请求文件，构建虚拟网络请求事件队列"""
+        queue = []
+        for i in range(req_num):
+            filename = 'req%d.txt' % i
+            req = self.read_network_file(filename, granularity)
+            req.graph['parent'] = -1
+            req.graph['id'] = i
+            queue.append(req)
+        return queue
+
     def get_child_reqs(self, req_num, child_req_num, granularity):
         """读取子虚拟网络请求文件，构建子虚拟网络请求事件队列"""
         queue = []

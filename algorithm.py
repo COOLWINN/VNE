@@ -53,7 +53,7 @@ class Algorithm:
         elif self.name == 'RL':
             training_set_path = 'comparison3/training_set/'
             networks = Network(training_set_path)
-            training_set = networks.get_reqs(1000)
+            training_set = networks.get_reqs_for_train(1000)
             agent = RL(sub=sub,
                        n_actions=sub.number_of_nodes(),
                        n_features=4,

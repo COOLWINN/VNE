@@ -164,19 +164,7 @@ class PolicyGradient:
 
     def calculate_reward(self, sub, req, node_map):
 
-        link_map = {}
-        for vLink in req.edges:
-            vn_from = vLink[0]
-            vn_to = vLink[1]
-            sn_from = node_map[vn_from]
-            sn_to = node_map[vn_to]
-            if nx.has_path(sub, source=sn_from, target=sn_to):
-                for path in Network.k_shortest_path(sub, sn_from, sn_to, 1):
-                    if Network.get_path_capacity(sub, path) >= req[vn_from][vn_to]['bw']:
-                        link_map.update({vLink: path})
-                        break
-                    else:
-                        continue
+        link_map = Network.cut_then_find_path(sub, req, node_map)
         if len(link_map) == req.number_of_edges():
             reward = 0
             # link resource

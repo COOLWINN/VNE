@@ -18,8 +18,8 @@ class Analysis:
                              'node utilization': 'Average Node Utilization',
                              'link utilization': 'Average Link Utilization'}
 
-        self.algorithm_lines = ['b:', 'r--', 'y-.', 'g-']
-        self.algorithm_names = ['GRC-VNE', 'MCTS-VNE', 'RL-VNE', 'ML-VNE']
+        self.algorithm_lines = ['b:', 'g--', 'y-.', 'r-']
+        self.algorithm_names = ['GRC', 'MCTS', 'RL', 'ML']
 
         self.epoch_lines = ['b-', 'r-', 'y-', 'g-', 'c-', 'm-']
         self.epoch_types = ['50', '60', '70', '80', '90', '100']
@@ -38,6 +38,19 @@ class Analysis:
             for time, evaluation in evaluation.metrics.items():
                 f.write("%-10s\t" % time)
                 f.write("%-20s\t%-20s\t%-20s\t%-20s\t%-20s\t%-20s\n" % evaluation)
+
+    def save_network_load(self, sub, filename1, filename2):
+        """将一段时间内底层网络的性能指标输出到指定文件内"""
+
+        with open(self.result_dir + filename1, 'w') as f:
+            for i in range(sub.number_of_nodes()):
+                utilization = (sub.nodes[i]['cpu'] - sub.nodes[i]['cpu_remain']) / sub.nodes[i]['cpu']
+                f.write("%s\n" % utilization)
+        with open(self.result_dir + filename2, 'w') as f:
+            for link in sub.edges:
+                start, end = link[0], link[1]
+                utilization = (sub[start][end]['bw'] - sub[start][end]['bw_remain']) / sub[start][end]['bw']
+                f.write("%s\n" % utilization)
 
     def save_epoch(self, epoch, acc, runtime):
         """保存不同采样次数的实验结果"""
@@ -84,22 +97,28 @@ class Analysis:
         index = 0
         for metric, title in self.metric_names.items():
             index += 1
+            if index == 2 or index == 3:
+                continue
             plt.figure()
             for alg_id in range(len(self.algorithm_names)):
                 x = results[alg_id][0]
                 y = results[alg_id][index]
                 plt.plot(x, y, self.algorithm_lines[alg_id], label=self.algorithm_names[alg_id])
             plt.xlim([25000, 50000])
-            if metric == 'acceptance ratio' or metric == 'node utilization' or metric == 'link utilization':
-                plt.ylim([0, 1])
+            if metric == 'acceptance ratio':
+                plt.ylim([0.7, 1])
+            if metric == 'R_C':
+                plt.ylim([0.55, 0.75])
+            if metric == 'node utilization':
+                plt.ylim([0, 0.7])
             if metric == 'link utilization':
-                plt.ylim([0, 0.5])
+                plt.ylim([0, 0.3])
             plt.xlabel("time", fontsize=12)
             plt.ylabel(metric, fontsize=12)
             plt.title(title, fontsize=15)
-            plt.legend(loc='best', fontsize=12)
-            plt.savefig(self.result_dir + metric + '.png')
-        # plt.show()
+            plt.legend(loc='lower right', fontsize=12)
+            # plt.savefig(self.result_dir + metric + '.png')
+        plt.show()
 
     def draw_result_granularity(self):
         """绘制实验结果图"""
@@ -223,7 +242,55 @@ class Analysis:
         plt.savefig(self.result_dir + filename + '.png')
         plt.close()
 
+    def save_distribution(self):
+        """保存不同算法在各指定时刻的网络负载"""
+
+        for i in range(5):
+            index = 1000 + 200 * (i + 1) - 1
+            for j in range(4):
+                # 节点负载
+                filename = '%s-node-%s.txt' % (self.algorithm_names[j], index)
+                with open(self.result_dir + filename) as f:
+                    lines = f.readlines()
+
+                y1, y2, y3, y4, y5 = 0, 0, 0, 0, 0
+
+                for line in lines:
+                    stress = float(line)
+                    if 0 <= stress <= 0.2:
+                        y1 = y1 + 1
+                    elif 0.2 < stress <= 0.4:
+                        y2 = y2 + 1
+                    elif 0.4 < stress <= 0.6:
+                        y3 = y3 + 1
+                    elif 0.6 < stress <= 0.8:
+                        y4 = y4 + 1
+                    else:
+                        y5 = y5 + 1
+                with open(self.result_dir + 'node-distribution-%s.txt' % index, 'a') as f:
+                    f.write("%d\t%d\t%d\t%d\t%d\n" % (y1, y2, y3, y4, y5))
+
+                # link
+                filename = '%s-link-%s.txt' % (self.algorithm_names[j], index)
+                with open(self.result_dir + filename) as f:
+                    lines = f.readlines()
+                y1, y2, y3, y4, y5 = 0, 0, 0, 0, 0
+                for line in lines:
+                    stress = float(line)
+                    if 0 <= stress <= 0.2:
+                        y1 = y1 + 1
+                    elif 0.2 < stress <= 0.4:
+                        y2 = y2 + 1
+                    elif 0.4 < stress <= 0.6:
+                        y3 = y3 + 1
+                    elif 0.6 < stress <= 0.8:
+                        y4 = y4 + 1
+                    else:
+                        y5 = y5 + 1
+                with open(self.result_dir + 'link-distribution-%s.txt' % index, 'a') as f:
+                    f.write("%d\t%d\t%d\t%d\t%d\n" % (y1, y2, y3, y4, y5))
+
 
 if __name__ == '__main__':
-    analysis = Analysis('results_algorithm/')
-    analysis.draw_result_algorithms()
+    analysis = Analysis('results_new/')
+    analysis.save_distribution()

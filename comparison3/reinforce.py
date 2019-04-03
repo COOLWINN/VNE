@@ -243,7 +243,8 @@ class RL:
 
     def calculate_reward(self, sub, req, node_map):
 
-        link_map = Network.find_path(sub, req, node_map)
+        link_map = Network.cut_then_find_path(sub, req, node_map)
+
         if len(link_map) == req.number_of_edges():
             requested, occupied = 0, 0
 

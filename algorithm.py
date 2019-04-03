@@ -12,22 +12,21 @@ from network import Network
 from event import Event
 from queue import PriorityQueue
 import tensorflow as tf
+from analysis import Analysis
 
 
 class Algorithm:
 
-    def __init__(self, name, result_dir, node_arg=10, link_method=1, granularity=1):
+    def __init__(self, name, node_arg=10, link_method=1, granularity=1):
         self.name = name
-        self.result_dir = result_dir
-        if not os.path.exists(self.result_dir):
-            os.makedirs(self.result_dir)
         self.agent = None
         self.node_arg = node_arg
         self.link_method = link_method
         self.granularity = granularity
         self.evaluation = Evaluation()
 
-    def execute(self, network_path, sub_filename, req_num=1000, child_num=0):
+    def execute(self, result_dir, network_path, sub_filename, req_num=1000, child_num=0):
+        tool = Analysis(result_dir)
         networks = Network(network_path)
         sub, requests, children = networks.get_networks(sub_filename, req_num, child_num, self.granularity)
         events = PriorityQueue()
@@ -37,9 +36,10 @@ class Algorithm:
         with tf.Session() as sess:
             self.configure(sub, sess)
             start = time.time()
-            self.handle(sub, events)
-            runtime = time.time()-start
+            self.handle(tool, sub, events)
+            runtime = time.time() - start
         tf.get_default_graph().finalize()
+        tool.save_evaluations(self.evaluation, '%s-VNE.txt' % self.name)
         return runtime
 
     def configure(self, sub, sess=None):
@@ -98,9 +98,9 @@ class Algorithm:
                                    episodes=self.node_arg)
         self.agent = agent
 
-    def handle(self, sub, events, requests=None):
+    def handle(self, tool, sub, events, requests=None):
 
-        child_algorithm = Algorithm('MCTS', self.result_dir, link_method=5)
+        child_algorithm = Algorithm('MCTS', link_method=1)
 
         while not events.empty():
 
@@ -111,70 +111,17 @@ class Algorithm:
             if parent_id == -1:
                 if req.graph['type'] == 0:
                     print("\nTry to map request%s: " % req_id)
+
                     if self.mapping(sub, req):
                         req_leave = copy.deepcopy(req)
                         req_leave.graph['type'] = 1
                         req_leave.graph['time'] = req.graph['time'] + req.graph['duration']
                         events.put(Event(req_leave))
 
-                    if req_id == 1199:
-                        with open('%s%s-node-%s.txt' % (self.result_dir, self.name, req_id), 'w') as f:
-                            for i in range(sub.number_of_nodes()):
-                                utilization = (sub.nodes[i]['cpu'] - sub.nodes[i]['cpu_remain']) / sub.nodes[i]['cpu']
-                                f.write("%s\n" % utilization)
-                        with open('%s%s-link-%s.txt' % (self.result_dir, self.name, req_id), 'w') as f:
-                            for link in sub.edges:
-                                start, end = link[0], link[1]
-                                utilization = (sub[start][end]['bw'] - sub[start][end]['bw_remain']) / sub[start][end][
-                                    'bw']
-                                f.write("%s\n" % utilization)
-
-                    if req_id == 1399:
-                        with open('%s%s-node-%s.txt' % (self.result_dir, self.name, req_id), 'w') as f:
-                            for i in range(sub.number_of_nodes()):
-                                utilization = (sub.nodes[i]['cpu'] - sub.nodes[i]['cpu_remain']) / sub.nodes[i]['cpu']
-                                f.write("%s\n" % utilization)
-                        with open('%s%s-link-%s.txt' % (self.result_dir, self.name, req_id), 'w') as f:
-                            for link in sub.edges:
-                                start, end = link[0], link[1]
-                                utilization = (sub[start][end]['bw'] - sub[start][end]['bw_remain']) / sub[start][end][
-                                    'bw']
-                                f.write("%s\n" % utilization)
-
-                    if req_id == 1599:
-                        with open('%s%s-node-%s.txt' % (self.result_dir, self.name, req_id), 'w') as f:
-                            for i in range(sub.number_of_nodes()):
-                                utilization = (sub.nodes[i]['cpu'] - sub.nodes[i]['cpu_remain']) / sub.nodes[i]['cpu']
-                                f.write("%s\n" % utilization)
-                        with open('%s%s-link-%s.txt' % (self.result_dir, self.name, req_id), 'w') as f:
-                            for link in sub.edges:
-                                start, end = link[0], link[1]
-                                utilization = (sub[start][end]['bw'] - sub[start][end]['bw_remain']) / sub[start][end][
-                                    'bw']
-                                f.write("%s\n" % utilization)
-
-                    if req_id == 1799:
-                        with open('%s%s-node-%s.txt' % (self.result_dir, self.name, req_id), 'w') as f:
-                            for i in range(sub.number_of_nodes()):
-                                utilization = (sub.nodes[i]['cpu'] - sub.nodes[i]['cpu_remain']) / sub.nodes[i]['cpu']
-                                f.write("%s\n" % utilization)
-                        with open('%s%s-link-%s.txt' % (self.result_dir, self.name, req_id), 'w') as f:
-                            for link in sub.edges:
-                                start, end = link[0], link[1]
-                                utilization = (sub[start][end]['bw'] - sub[start][end]['bw_remain']) / sub[start][end][
-                                    'bw']
-                                f.write("%s\n" % utilization)
-
-                    if req_id == 1999:
-                        with open('%s%s-node-%s.txt' % (self.result_dir, self.name, req_id), 'w') as f:
-                            for i in range(sub.number_of_nodes()):
-                                utilization = (sub.nodes[i]['cpu'] - sub.nodes[i]['cpu_remain']) / sub.nodes[i]['cpu']
-                                f.write("%s\n" % utilization)
-                        with open('%s%s-link-%s.txt' % (self.result_dir, self.name, req_id), 'w') as f:
-                            for link in sub.edges:
-                                start, end = link[0], link[1]
-                                utilization = (sub[start][end]['bw'] - sub[start][end]['bw_remain']) / sub[start][end]['bw']
-                                f.write("%s\n" % utilization)
+                    if ((req_id + 1) - 1000) % 200 == 0:
+                        filename1 = '%s-node-%s.txt' % (self.name, req_id)
+                        filename2 = '%s-link-%s.txt' % (self.name, req_id)
+                        tool.save_network_load(sub, filename1, filename2)
 
                 if req.graph['type'] == 1:
                     Network.recover(sub, req, self.granularity)

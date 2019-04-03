@@ -16,17 +16,24 @@ class GRC:
         self.migrate_success = False
         self.no_solution = False
 
-    def run(self, sub, vnr):
-        node_map = {}
+    def run(self, sub, req):
+
+        # 对底层节点排名
         sub_grc_vector = self.calculate_grc(sub)
-        vnr_grc_vector = self.calculate_grc(vnr, category='vnr')
-        for v_node in vnr_grc_vector:
+        # 对虚拟节点排名
+        req_grc_vector = self.calculate_grc(req, category='req')
+
+        node_map = {}
+        sub_copy = copy.deepcopy(sub)
+        for v_node in req_grc_vector:
             v_id = v_node[0]
             for s_node in sub_grc_vector:
                 s_id = s_node[0]
-                if s_id not in node_map.values() and \
-                        sub.nodes[s_id]['cpu_remain'] >= vnr.nodes[v_id]['cpu']:
+                if s_id not in node_map.values() and sub_copy.nodes[s_id]['cpu_remain'] > req.nodes[v_id]['cpu']:
                     node_map.update({v_id: s_id})
+                    tmp = sub_copy.nodes[s_id]['cpu_remain'] - req.nodes[v_id]['cpu']
+                    sub_copy.nodes[s_id]['cpu_remain'] = round(tmp, 6)
+                    break
         return node_map
 
     def run_run(self, sub, upper_req, infrastructure):
@@ -149,7 +156,7 @@ class GRC:
     def calculate_grc(self, graph, category='substrate'):
         """calculate grc vector of a substrate network or a virtual network"""
 
-        if category == 'vnr':
+        if category == 'req':
             cpu_type = 'cpu'
             bw_type = 'bw'
         else:

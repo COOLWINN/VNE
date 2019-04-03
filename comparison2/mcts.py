@@ -64,18 +64,7 @@ class State:
         node_map, link_map = {}, {}
         for i in range(self.vnr.number_of_nodes()):
             node_map.update({i: self.chosen_ids[i]})
-        for vLink in self.vnr.edges:
-            vn_from = vLink[0]
-            vn_to = vLink[1]
-            sn_from = node_map[vn_from]
-            sn_to = node_map[vn_to]
-            if nx.has_path(self.sub, source=sn_from, target=sn_to):
-                for path in Network.k_shortest_path(self.sub, sn_from, sn_to, 1):
-                    if Network.get_path_capacity(self.sub, path) >= self.vnr[vn_from][vn_to]['bw']:
-                        link_map.update({vLink: path})
-                        break
-                    else:
-                        continue
+        link_map = Network.find_path(self.sub, self.vnr, node_map)
         if len(link_map) == self.vnr.number_of_edges():
             requested, occupied = 0, 0
 

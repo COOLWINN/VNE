@@ -1,3 +1,4 @@
+import copy
 import networkx as nx
 from itertools import islice
 
@@ -129,3 +130,118 @@ class Network:
     def k_shortest_path(graph, source, target, k=5):
         """K最短路径算法"""
         return list(islice(nx.shortest_simple_paths(graph, source, target), k))
+
+    @staticmethod
+    def cut_then_find_path(sub, req, node_map):
+        """求解链路映射问题"""
+
+        link_map = {}
+        for vLink in req.edges:
+            vn_from, vn_to = vLink[0], vLink[1]
+            # 剪枝操作，先暂时将那些不满足当前待映射虚拟链路资源需求的底层链路删除
+            sub_tmp = copy.deepcopy(sub)
+            sub_edges = []
+            for sLink in sub_tmp.edges:
+                sub_edges.append(sLink)
+            for edge in sub_edges:
+                sn_from, sn_to = edge[0], edge[1]
+                if sub_tmp[sn_from][sn_to]['bw_remain'] < req[vn_from][vn_to]['bw']:
+                    sub_tmp.remove_edge(sn_from, sn_to)
+
+            # 在剪枝后的底层网络上寻找一条可映射的最短路径
+            sn_from, sn_to = node_map[vn_from], node_map[vn_to]
+            if nx.has_path(sub_tmp, source=sn_from, target=sn_to):
+                path = Network.k_shortest_path(sub_tmp, sn_from, sn_to, 1)[0]
+                link_map.update({vLink: path})
+            else:
+                break
+
+        # 返回链路映射集合
+        return link_map
+
+    @staticmethod
+    def find_path(sub, req, node_map, k=1):
+        """求解链路映射问题"""
+
+        link_map = {}
+        for vLink in req.edges:
+            vn_from = vLink[0]
+            vn_to = vLink[1]
+            sn_from = node_map[vn_from]
+            sn_to = node_map[vn_to]
+            if nx.has_path(sub, source=sn_from, target=sn_to):
+                for path in Network.k_shortest_path(sub, sn_from, sn_to, k):
+                    if Network.get_path_capacity(sub, path) >= req[vn_from][vn_to]['bw']:
+                        link_map.update({vLink: path})
+                        break
+                    else:
+                        continue
+
+        # 返回链路映射集合
+        return link_map
+
+    @staticmethod
+    def allocate(sub, req, node_map, link_map, granularity=1):
+        """分配节点和链路资源"""
+
+        # 分配节点资源
+        for v_id, s_id in node_map.items():
+            cpu_tmp = sub.nodes[s_id]['cpu_remain'] - req.nodes[v_id]['cpu']
+            sub.nodes[s_id]['cpu_remain'] = round(cpu_tmp, 6)
+            if granularity > 1:
+                flow_tmp = sub.nodes[s_id]['flow_remain'] - req.nodes[v_id]['flow']
+                sub.nodes[s_id]['flow_remain'] = round(flow_tmp, 6)
+                if granularity > 2:
+                    queue_tmp = sub.nodes[s_id]['queue_remain'] - req.nodes[v_id]['queue']
+                    sub.nodes[s_id]['queue_remain'] = round(queue_tmp, 6)
+
+        # 分配链路资源
+        for vl, path in link_map.items():
+            link_resource = req[vl[0]][vl[1]]['bw']
+            start = path[0]
+            for end in path[1:]:
+                bw_tmp = sub[start][end]['bw_remain'] - link_resource
+                sub[start][end]['bw_remain'] = round(bw_tmp, 6)
+                start = end
+
+        # 更新映射信息
+        mapped_info = sub.graph['mapped_info']
+        mapped_info.update({req.graph['id']: (node_map, link_map)})
+        sub.graph['mapped_info'] = mapped_info
+
+    @staticmethod
+    def recover(sub, req, granularity=1):
+        """收回节点和链路资源"""
+
+        req_id = req.graph['id']
+        mapped_info = sub.graph['mapped_info']
+        if req_id in mapped_info.keys():
+            print("\nRelease the resources which are occupied by request%s" % req_id)
+
+            # 读取该虚拟网络请求的映射信息
+            node_map = mapped_info[req_id][0]
+            link_map = mapped_info[req_id][1]
+
+            # 释放节点资源
+            for v_id, s_id in node_map.items():
+                cpu_tmp = sub.nodes[s_id]['cpu_remain'] + req.nodes[v_id]['cpu']
+                sub.nodes[s_id]['cpu_remain'] = round(cpu_tmp, 6)
+                if granularity > 1:
+                    flow_tmp = sub.nodes[s_id]['flow_remain'] + req.nodes[v_id]['flow']
+                    sub.nodes[s_id]['flow_remain'] = round(flow_tmp, 6)
+                    if granularity > 2:
+                        queue_tmp = sub.nodes[s_id]['queue_remain'] + req.nodes[v_id]['queue']
+                        sub.nodes[s_id]['queue_remain'] = round(queue_tmp, 6)
+
+            # 释放链路资源
+            for vl, path in link_map.items():
+                link_resource = req[vl[0]][vl[1]]['bw']
+                start = path[0]
+                for end in path[1:]:
+                    bw_tmp = sub[start][end]['bw_remain'] + link_resource
+                    sub[start][end]['bw_remain'] = round(bw_tmp, 6)
+                    start = end
+
+            # 移除相应的映射信息
+            mapped_info.pop(req_id)
+            sub.graph['mapped_info'] = mapped_info

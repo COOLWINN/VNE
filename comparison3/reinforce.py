@@ -3,7 +3,6 @@ import numpy as np
 import copy
 import time
 from comparison3.mdp import Env
-import networkx as nx
 from network import Network
 from analysis import Analysis
 
@@ -100,26 +99,9 @@ class RL:
                             grad_buffer[0] *= reward
                             grad_buffer[1] *= reward
 
-                            # 更新底层网络
-                            mapped_info = sub_copy.graph['mapped_info']
-                            mapped_info.update({req.graph['id']: (node_map, link_map)})
-                            sub_copy.graph['mapped_info'] = mapped_info
+                            # 分配资源
+                            Network.allocate(sub_copy, req, node_map, link_map)
 
-                            req_id = req.graph['id']
-                            node_map = sub_copy.graph['mapped_info'][req_id][0]
-                            link_map = sub_copy.graph['mapped_info'][req_id][1]
-
-                            # 分配节点资源
-                            for v_id, s_id in node_map.items():
-                                sub_copy.nodes[s_id]['cpu_remain'] -= req.nodes[v_id]['cpu']
-
-                            # 分配或释放链路资源
-                            for vl, path in link_map.items():
-                                link_resource = req[vl[0]][vl[1]]['bw']
-                                start = path[0]
-                                for end in path[1:]:
-                                    sub_copy[start][end]['bw_remain'] -= link_resource
-                                    start = end
                         else:
                             print("Failure!")
 
@@ -134,29 +116,8 @@ class RL:
                             grad_buffer[ix] = grad * 0
 
                 if req.graph['type'] == 1:
-
-                    print("\tIt's time is out, release the occupied resources")
-                    if req_id in sub_copy.graph['mapped_info'].keys():
-                        req_id = req.graph['id']
-                        node_map = sub_copy.graph['mapped_info'][req_id][0]
-                        link_map = sub_copy.graph['mapped_info'][req_id][1]
-
-                        # 分配或释放节点资源
-                        for v_id, s_id in node_map.items():
-                            sub_copy.nodes[s_id]['cpu_remain'] += req.nodes[v_id]['cpu']
-
-                        # 分配或释放链路资源
-                        for vl, path in link_map.items():
-                            link_resource = req[vl[0]][vl[1]]['bw']
-                            start = path[0]
-                            for end in path[1:]:
-                                sub_copy[start][end]['bw_remain'] += link_resource
-                                start = end
-
-                        # 移除相应的映射信息
-                        mapped_info = sub_copy.graph['mapped_info']
-                        mapped_info.pop(req_id)
-                        sub_copy.graph['mapped_info'] = mapped_info
+                    # 收回该请求占用的资源
+                    Network.recover(sub_copy, req)
 
                 env.set_sub(sub_copy)
 
@@ -282,19 +243,7 @@ class RL:
 
     def calculate_reward(self, sub, req, node_map):
 
-        link_map = {}
-        for vLink in req.edges:
-            vn_from = vLink[0]
-            vn_to = vLink[1]
-            sn_from = node_map[vn_from]
-            sn_to = node_map[vn_to]
-            if nx.has_path(sub, source=sn_from, target=sn_to):
-                for path in Network.k_shortest_path(sub, sn_from, sn_to, 1):
-                    if Network.get_path_capacity(sub, path) >= req[vn_from][vn_to]['bw']:
-                        link_map.update({vLink: path})
-                        break
-                    else:
-                        continue
+        link_map = Network.find_path(sub, req, node_map)
         if len(link_map) == req.number_of_edges():
             requested, occupied = 0, 0
 

@@ -1,11 +1,10 @@
+import os
 import copy
 import time
-import networkx as nx
 from evaluation import Evaluation
 from comparison1.grc import GRC
 from comparison2.mcts import MCTS
 from comparison3.reinforce import RL
-from cpu_no_total.agent1 import Agent1
 from cpu_flow.agent2 import Agent2
 from cpu_flow_queue.agent3 import Agent3
 from cpu_.agent import PolicyGradient
@@ -17,11 +16,14 @@ import tensorflow as tf
 
 class Algorithm:
 
-    def __init__(self, name, node_arg=10, link_arg=1, granularity=1):
+    def __init__(self, name, result_dir, node_arg=10, link_method=1, granularity=1):
         self.name = name
+        self.result_dir = result_dir
+        if not os.path.exists(self.result_dir):
+            os.makedirs(self.result_dir)
         self.agent = None
         self.node_arg = node_arg
-        self.link_arg = link_arg
+        self.link_method = link_method
         self.granularity = granularity
         self.evaluation = Evaluation()
 
@@ -44,11 +46,9 @@ class Algorithm:
 
         if self.name == 'GRC':
             agent = GRC(damping_factor=0.9, sigma=1e-6)
-            self.agent = agent
 
         elif self.name == 'MCTS':
             agent = MCTS(computation_budget=5, exploration_constant=0.5)
-            self.agent = agent
 
         elif self.name == 'RL':
             training_set_path = 'comparison3/training_set/'
@@ -61,7 +61,6 @@ class Algorithm:
                        epoch_num=self.node_arg,
                        batch_size=100)
             agent.train(training_set)
-            self.agent = agent
 
         elif self.name == 'ML1':
             agent = PolicyGradient(sess=sess,
@@ -70,7 +69,6 @@ class Algorithm:
                                    learning_rate=0.02,
                                    reward_decay=0.95,
                                    episodes=self.node_arg)
-            self.agent = agent
             # agent = Agent1(action_num=sub.number_of_nodes(),
             #                feature_num=5,
             #                learning_rate=0.02,
@@ -83,7 +81,6 @@ class Algorithm:
                            learning_rate=0.02,
                            reward_decay=0.95,
                            episodes=self.node_arg)
-            self.agent = agent
 
         elif self.name == 'ML3':
             agent = Agent3(action_num=sub.number_of_nodes(),
@@ -91,22 +88,19 @@ class Algorithm:
                            learning_rate=0.02,
                            reward_decay=0.95,
                            episodes=self.node_arg)
-            self.agent = agent
 
-        elif self.name == 'ML':
+        else:
             agent = PolicyGradient(sess=sess,
                                    action_num=sub.number_of_nodes(),
                                    feature_num=7,
                                    learning_rate=0.02,
                                    reward_decay=0.95,
                                    episodes=self.node_arg)
-            self.agent = agent
-        else:
-            print("Input Error!")
+        self.agent = agent
 
     def handle(self, sub, events, requests=None):
 
-        child_algorithm = Algorithm('MCTS', link_arg=5)
+        child_algorithm = Algorithm('MCTS', self.result_dir, link_method=5)
 
         while not events.empty():
 
@@ -123,12 +117,70 @@ class Algorithm:
                         req_leave.graph['time'] = req.graph['time'] + req.graph['duration']
                         events.put(Event(req_leave))
 
+                    if req_id == 1199:
+                        with open('%s%s-node-%s.txt' % (self.result_dir, self.name, req_id), 'w') as f:
+                            for i in range(sub.number_of_nodes()):
+                                utilization = (sub.nodes[i]['cpu'] - sub.nodes[i]['cpu_remain']) / sub.nodes[i]['cpu']
+                                f.write("%s\n" % utilization)
+                        with open('%s%s-link-%s.txt' % (self.result_dir, self.name, req_id), 'w') as f:
+                            for link in sub.edges:
+                                start, end = link[0], link[1]
+                                utilization = (sub[start][end]['bw'] - sub[start][end]['bw_remain']) / sub[start][end][
+                                    'bw']
+                                f.write("%s\n" % utilization)
+
+                    if req_id == 1399:
+                        with open('%s%s-node-%s.txt' % (self.result_dir, self.name, req_id), 'w') as f:
+                            for i in range(sub.number_of_nodes()):
+                                utilization = (sub.nodes[i]['cpu'] - sub.nodes[i]['cpu_remain']) / sub.nodes[i]['cpu']
+                                f.write("%s\n" % utilization)
+                        with open('%s%s-link-%s.txt' % (self.result_dir, self.name, req_id), 'w') as f:
+                            for link in sub.edges:
+                                start, end = link[0], link[1]
+                                utilization = (sub[start][end]['bw'] - sub[start][end]['bw_remain']) / sub[start][end][
+                                    'bw']
+                                f.write("%s\n" % utilization)
+
+                    if req_id == 1599:
+                        with open('%s%s-node-%s.txt' % (self.result_dir, self.name, req_id), 'w') as f:
+                            for i in range(sub.number_of_nodes()):
+                                utilization = (sub.nodes[i]['cpu'] - sub.nodes[i]['cpu_remain']) / sub.nodes[i]['cpu']
+                                f.write("%s\n" % utilization)
+                        with open('%s%s-link-%s.txt' % (self.result_dir, self.name, req_id), 'w') as f:
+                            for link in sub.edges:
+                                start, end = link[0], link[1]
+                                utilization = (sub[start][end]['bw'] - sub[start][end]['bw_remain']) / sub[start][end][
+                                    'bw']
+                                f.write("%s\n" % utilization)
+
+                    if req_id == 1799:
+                        with open('%s%s-node-%s.txt' % (self.result_dir, self.name, req_id), 'w') as f:
+                            for i in range(sub.number_of_nodes()):
+                                utilization = (sub.nodes[i]['cpu'] - sub.nodes[i]['cpu_remain']) / sub.nodes[i]['cpu']
+                                f.write("%s\n" % utilization)
+                        with open('%s%s-link-%s.txt' % (self.result_dir, self.name, req_id), 'w') as f:
+                            for link in sub.edges:
+                                start, end = link[0], link[1]
+                                utilization = (sub[start][end]['bw'] - sub[start][end]['bw_remain']) / sub[start][end][
+                                    'bw']
+                                f.write("%s\n" % utilization)
+
+                    if req_id == 1999:
+                        with open('%s%s-node-%s.txt' % (self.result_dir, self.name, req_id), 'w') as f:
+                            for i in range(sub.number_of_nodes()):
+                                utilization = (sub.nodes[i]['cpu'] - sub.nodes[i]['cpu_remain']) / sub.nodes[i]['cpu']
+                                f.write("%s\n" % utilization)
+                        with open('%s%s-link-%s.txt' % (self.result_dir, self.name, req_id), 'w') as f:
+                            for link in sub.edges:
+                                start, end = link[0], link[1]
+                                utilization = (sub[start][end]['bw'] - sub[start][end]['bw_remain']) / sub[start][end]['bw']
+                                f.write("%s\n" % utilization)
+
                 if req.graph['type'] == 1:
-                    if req_id in sub.graph['mapped_info'].keys():
-                        print("\nRelease the resources which are occupied by request%s" % req_id)
-                        self.change_resource(sub, req, 'release')
+                    Network.recover(sub, req, self.granularity)
 
             else:
+
                 if parent_id in sub.graph['mapped_info'].keys():
                     child_algorithm.configure(req)
                     print("\nTry to map the %sth upper request onto virtual network %s: " % (req_id, parent_id))
@@ -144,7 +196,7 @@ class Algorithm:
         print("accepted child requests: %s" % child_algorithm.evaluation.total_accepted)
 
     def mapping(self, sub, req):
-        """two phrases:node mapping and link mapping"""
+        """两步映射：先节点映射阶段再链路映射阶段"""
 
         self.evaluation.total_arrived += 1
 
@@ -154,12 +206,11 @@ class Algorithm:
         if len(node_map) == req.number_of_nodes():
             # mapping virtual links
             print("link mapping...")
-            link_map = self.link_mapping(sub, req, node_map, self.link_arg)
+            link_map = self.link_mapping(sub, req, node_map)
             if len(link_map) == req.number_of_edges():
-                mapped_info = sub.graph['mapped_info']
-                mapped_info.update({req.graph['id']: (node_map, link_map)})
-                sub.graph['mapped_info'] = mapped_info
-                self.change_resource(sub, req, 'allocate')
+                Network.allocate(sub, req, node_map, link_map, self.granularity)
+                # 更新实验结果
+                self.evaluation.collect(sub, req, link_map)
                 print("Success!")
                 return True
             else:
@@ -180,60 +231,15 @@ class Algorithm:
         # 返回节点映射集合
         return node_map
 
-    @staticmethod
-    def link_mapping(sub, req, node_map, k=1):
-        """求解链路映射问题"""
+    def link_mapping(self, sub, req, node_map):
+        if self.link_method == 1:
+            # 剪枝后再寻最短路径
+            link_map = Network.cut_then_find_path(sub, req, node_map)
+        else:
+            # K最短路径
+            link_map = Network.find_path(sub, req, node_map, 5)
 
-        link_map = {}
-        for vLink in req.edges:
-            vn_from = vLink[0]
-            vn_to = vLink[1]
-            sn_from = node_map[vn_from]
-            sn_to = node_map[vn_to]
-            if nx.has_path(sub, source=sn_from, target=sn_to):
-                for path in Network.k_shortest_path(sub, sn_from, sn_to, k):
-                    if Network.get_path_capacity(sub, path) >= req[vn_from][vn_to]['bw']:
-                        link_map.update({vLink: path})
-                        break
-                    else:
-                        continue
-
-        # 返回链路映射集合
         return link_map
-
-    def change_resource(self, sub, req, instruction):
-        """分配或释放节点和链路资源"""
-
-        # 读取该虚拟网络请求的映射信息
-        req_id = req.graph['id']
-        node_map = sub.graph['mapped_info'][req_id][0]
-        link_map = sub.graph['mapped_info'][req_id][1]
-
-        factor = -1
-        if instruction == 'release':
-            factor = 1
-
-        # 分配或释放节点资源
-        for v_id, s_id in node_map.items():
-            sub.nodes[s_id]['cpu_remain'] += factor * req.nodes[v_id]['cpu']
-
-        # 分配或释放链路资源
-        for vl, path in link_map.items():
-            link_resource = req[vl[0]][vl[1]]['bw']
-            start = path[0]
-            for end in path[1:]:
-                sub[start][end]['bw_remain'] += factor * link_resource
-                start = end
-
-        if instruction == 'allocate':
-            # 增加实验结果
-            self.evaluation.collect(sub, req, link_map)
-
-        if instruction == 'release':
-            # 移除相应的映射信息
-            mapped_info = sub.graph['mapped_info']
-            mapped_info.pop(req_id)
-            sub.graph['mapped_info'] = mapped_info
 
     # def upper_mapping(self, vnr, algorithm, sub):
     #     """only for child virtual network requests"""

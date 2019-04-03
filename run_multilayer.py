@@ -24,7 +24,7 @@ def main():
     with tf.Session() as sess:
         # Step2: 配置映射算法
         node_arg = 50
-        algorithm = Algorithm('ml', node_arg=node_arg, link_arg=5)
+        algorithm = Algorithm('ml', node_arg=node_arg, link_method=1)
         algorithm.configure(sub, sess)
         # Step3: 依次处理虚拟网络请求事件
         algorithm.handle(sub, events, requests)

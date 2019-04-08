@@ -4,7 +4,7 @@ from analysis import Analysis
 
 if __name__ == '__main__':
 
-    tool = Analysis('results_new/')
+    tool = Analysis('results_algorithm/')
     name = 'ML'
     algorithm = Algorithm(name, node_arg=60)
     runtime = algorithm.execute(network_path='networks/',

@@ -8,7 +8,6 @@ from cpu_flow.agent2 import Agent2
 from cpu_flow_queue.agent3 import Agent3
 from cpu_.agent import PolicyGradient
 from network import Network
-from event import Event
 from queue import PriorityQueue
 import tensorflow as tf
 
@@ -29,13 +28,17 @@ class Algorithm:
         events = PriorityQueue()
         for req in requests:
             events.put(Event(req))
+        for child in children:
+            events.put(Event(child))
+
         tf.reset_default_graph()
         with tf.Session() as sess:
             self.configure(sub, sess)
             start = time.time()
-            self.handle(sub, events)
+            self.handle(sub, events, requests)
             runtime = time.time() - start
         tf.get_default_graph().finalize()
+
         return runtime
 
     def configure(self, sub, sess=None):
@@ -91,7 +94,7 @@ class Algorithm:
 
     def handle(self, sub, events, requests=None):
 
-        child_algorithm = Algorithm('MCTS', link_method=1)
+        child_algorithm = Algorithm('ML', node_arg=50)
 
         while not events.empty():
 
@@ -120,14 +123,18 @@ class Algorithm:
             else:
 
                 if parent_id in sub.graph['mapped_info'].keys():
-                    child_algorithm.configure(req)
                     print("\nTry to map the %sth upper request onto virtual network %s: " % (req_id, parent_id))
                     self.evaluation.total_arrived += 1
-                    if child_algorithm.mapping(requests[parent_id], req):
-                        print("Success!")
-                        self.evaluation.collect(requests[parent_id], req)
-                    else:
-                        print("Failure")
+                    g1 = tf.Graph()
+                    with tf.Session(graph=g1) as sess:
+                        child_algorithm.configure(requests[parent_id], sess)
+                        if child_algorithm.mapping(requests[parent_id], req):
+                            print("Success!")
+                            self.evaluation.collect(requests[parent_id], req)
+                        else:
+                            print("Failure")
+                    g1.finalize()
+
         accepted_num = self.evaluation.total_accepted - child_algorithm.evaluation.total_accepted
         print("accepted requests: %s" % accepted_num)
         print("arrived child requests: %s" % child_algorithm.evaluation.total_arrived)
@@ -213,3 +220,11 @@ class Algorithm:
     #             return False
     #     else:
     #         return False
+
+
+class Event:
+    def __init__(self, req):
+        self.req = req
+
+    def __lt__(self, other):
+        return self.req.graph['time'] < other.req.graph['time']

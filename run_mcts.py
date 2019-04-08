@@ -4,7 +4,7 @@ from analysis import Analysis
 
 if __name__ == '__main__':
 
-    tool = Analysis('results_new/')
+    tool = Analysis('results_algorithm/')
     name = 'MCTS'
     algorithm = Algorithm(name)
     runtime = algorithm.execute(network_path='networks/',

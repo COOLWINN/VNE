@@ -21,7 +21,10 @@ class Network:
     def get_reqs(self, req_num, granularity=1):
         """读取req_num个虚拟网络请求文件，构建虚拟网络请求事件队列"""
         queue = []
-        offset = 2000-req_num
+        if req_num == 1000:
+            offset = 2000-req_num
+        else:
+            offset = 0
         for i in range(req_num):
             index = i + offset
             filename = 'req%d.txt' % index

@@ -1,11 +1,14 @@
 from algorithm import Algorithm
+from analysis import Analysis
+
 
 if __name__ == '__main__':
 
+    tool = Analysis('results_new/')
     name = 'RL'
-    algorithm = Algorithm(name, node_arg=10, link_method=1)
-    runtime = algorithm.execute(result_dir='results_new/',
-                                network_path='networks/',
+    algorithm = Algorithm(name, node_arg=10)
+    runtime = algorithm.execute(network_path='networks/',
                                 sub_filename='sub-wm.txt',
                                 req_num=1000)
+    tool.save_evaluations(algorithm.evaluation, '%s.txt' % name)
     print(runtime)

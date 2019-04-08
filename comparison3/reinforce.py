@@ -5,6 +5,7 @@ import time
 from comparison3.mdp import Env
 from network import Network
 from analysis import Analysis
+from evaluation import Evaluation
 
 
 class RL:
@@ -76,7 +77,8 @@ class RL:
 
                     if len(node_map) == req.number_of_nodes():
 
-                        reward, link_map = self.calculate_reward(sub_copy, req, node_map)
+                        link_map = Network.cut_then_find_path(sub_copy, req, node_map)
+                        reward = Evaluation.revenue_to_cost_ratio(req, link_map)
 
                         if reward != -1:
                             epx = np.vstack(xs)
@@ -240,28 +242,3 @@ class RL:
             return -1
         else:
             return action
-
-    def calculate_reward(self, sub, req, node_map):
-
-        link_map = Network.cut_then_find_path(sub, req, node_map)
-
-        if len(link_map) == req.number_of_edges():
-            requested, occupied = 0, 0
-
-            # node resource
-            for vn_id, sn_id in node_map.items():
-                node_resource = req.nodes[vn_id]['cpu']
-                occupied += node_resource
-                requested += node_resource
-
-            # link resource
-            for vl, path in link_map.items():
-                link_resource = req[vl[0]][vl[1]]['bw']
-                requested += link_resource
-                occupied += link_resource * (len(path) - 1)
-
-            reward = requested / occupied
-
-            return reward, link_map
-        else:
-            return -1, link_map

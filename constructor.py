@@ -10,8 +10,8 @@ TOTAL_TIME = 50000
 SCALE = 100
 
 # 仅与虚拟网络请求相关的参数
-DURATION_MEAN = 2000
-MIN_DURATION = 500
+DURATION_MEAN = 1000
+MIN_DURATION = 250
 DURATION_MEAN_SECOND = 1000
 MIN_DURATION_SECOND = 250
 MAX_DISTANCE = 20
@@ -80,14 +80,7 @@ class Constructor:
             count += 1
             time = start + ((count + 1) / (req_num_interval + 1)) * interval
             duration = MIN_DURATION + int(-math.log(random.random()) * (DURATION_MEAN - MIN_DURATION))
-
-            # node_amount = random.randint(min_num_nodes, max_num_nodes)
-
-            if random.random() <= 0.4:
-                node_amount = random.randint(min_num_nodes, max_num_nodes)
-            else:
-                node_amount = random.randint(min_num_nodes, (min_num_nodes + max_num_nodes) / 2)
-
+            node_amount = random.randint(min_num_nodes, max_num_nodes)
             self.make_req(i, min_res, max_res, node_amount, time, duration)
 
             # 生成子虚拟网络文件

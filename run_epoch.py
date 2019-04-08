@@ -3,12 +3,12 @@ from algorithm import Algorithm
 
 if __name__ == '__main__':
 
-    tool = Analysis('results_epoch/')
-    for i in range(100):
+    tool = Analysis('results_epoch_new/')
+    for i in range(20):
         epoch = (i + 1) * 10
-        algorithm = Algorithm('ML', node_arg=epoch, link_method=5)
-        runtime = algorithm.execute(result_dir='results_epoch/',
-                                    network_path='networks/',
-                                    sub_filename='sub-wm.txt')
+        algorithm = Algorithm(name='ML', node_arg=epoch)
+        runtime = algorithm.execute(network_path='networks/',
+                                    sub_filename='sub-wm.txt',
+                                    req_num=2000)
         tool.save_evaluations(algorithm.evaluation, '%s.txt' % epoch)
         tool.save_epoch(epoch, algorithm.evaluation.acc_ratio, runtime)

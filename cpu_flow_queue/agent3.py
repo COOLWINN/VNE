@@ -2,8 +2,8 @@ import tensorflow as tf
 import numpy as np
 from .my_mdp3 import MyEnv
 from model import PolicyModel
-import networkx as nx
 from network import Network
+from evaluation import Evaluation
 
 
 class Agent3:
@@ -16,11 +16,11 @@ class Agent3:
         self.ep_obs, self.ep_as, self.ep_rs = [], [], []
         self.sess = tf.Session()
 
-    def train(self, sub, vnr):
+    def train(self, sub, req):
         """通过蒙特卡洛采样不断尝试映射该虚拟网络请求，以获得效果最佳的策略网络"""
 
         # 初始化环境
-        env = MyEnv(sub, vnr)
+        env = MyEnv(sub, req)
         self.sess.run(tf.global_variables_initializer())
         for i_episode in range(self.episodes):
             print('Iteration %s' % i_episode)
@@ -30,8 +30,8 @@ class Agent3:
             tmp_node_map = {}
 
             # 采样
-            for count in range(vnr.number_of_nodes()):
-                action = self.choose_action(self.p_network, observation, sub, vnr.nodes[count]['cpu'], vnr.nodes[count]['flow'], vnr.nodes[count]['queue'])
+            for count in range(req.number_of_nodes()):
+                action = self.choose_action(self.p_network, observation, sub, req.nodes[count]['cpu'], req.nodes[count]['flow'], req.nodes[count]['queue'])
                 if action == -1:
                     break
                 else:
@@ -42,8 +42,9 @@ class Agent3:
                     # after each step, we should update the observation
                     observation = observation_
 
-            if len(tmp_node_map) == vnr.number_of_nodes():
-                reward = self.calculate_reward(sub, vnr, tmp_node_map)
+            if len(tmp_node_map) == req.number_of_nodes():
+                link_map = Network.cut_then_find_path(sub, req, tmp_node_map)
+                reward = Evaluation.revenue_to_cost_ratio(req, link_map)
                 if reward != -1:
                     vt = self.learn(self.p_network, reward)
 
@@ -81,7 +82,7 @@ class Agent3:
         candidate_action = []
         candidate_score = []
         for index, score in enumerate(prob_weights.ravel()):
-            if index not in self.ep_as and sub.nodes[index]['cpu_remain'] >= current_node_cpu and sub.nodes[index]['flow_remain'] >= current_node_flow and sub.nodes[index]['queue_remain'] >= current_node_queue:
+            if index not in self.ep_as and sub.nodes[index]['cpu_remain'] > current_node_cpu and sub.nodes[index]['flow_remain'] > current_node_flow and sub.nodes[index]['queue_remain'] > current_node_queue:
                 candidate_action.append(index)
                 candidate_score.append(score)
         if len(candidate_action) == 0:
@@ -104,7 +105,7 @@ class Agent3:
         candidate = np.argmax(filter_prob)
 
         for index, score in enumerate(filter_prob):
-            if sub.nodes[index]['cpu_remain'] < current_node_cpu and sub.nodes[index]['flow_remain'] < current_node_flow and sub.nodes[index]['queue_remain'] < current_node_queue:
+            if sub.nodes[index]['cpu_remain'] < current_node_cpu or sub.nodes[index]['flow_remain'] < current_node_flow or sub.nodes[index]['queue_remain'] < current_node_queue:
                 filter_prob[index] = 0.0
         action = np.argmax(filter_prob)
 
@@ -153,25 +154,12 @@ class Agent3:
     def _discount_and_norm_rewards(self, reward):
 
         discounted_ep_rs = np.zeros_like(self.ep_rs)
-        running_add = 0
+        # running_add = 0
         for t in reversed(range(0, len(self.ep_rs))):
-            running_add = running_add * self.gamma + self.ep_rs[t]
-            discounted_ep_rs[t] = running_add / reward
+            # running_add = running_add * self.gamma + self.ep_rs[t]
+            # discounted_ep_rs[t] = running_add / reward
+            discounted_ep_rs[t] = reward
 
-        discounted_ep_rs -= np.mean(discounted_ep_rs)
-        discounted_ep_rs /= np.std(discounted_ep_rs)
+        # discounted_ep_rs -= np.mean(discounted_ep_rs)
+        # discounted_ep_rs /= np.std(discounted_ep_rs)
         return discounted_ep_rs
-
-    def calculate_reward(self, sub, req, node_map):
-
-        link_map = Network.cut_then_find_path(sub, req, node_map)
-        if len(link_map) == req.number_of_edges():
-            reward = 0
-            # link resource
-            for vl, path in link_map.items():
-                link_resource = req[vl[0]][vl[1]]['bw']
-                reward += link_resource * (len(path) - 2)
-
-            return reward + 0.01
-        else:
-            return -1.0

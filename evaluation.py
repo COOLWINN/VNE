@@ -23,7 +23,7 @@ class Evaluation:
         self.total_accepted += 1
         self.acc_ratio = self.total_accepted/self.total_arrived
         if link_map is not None:
-            self.total_revenue += self.calcualte_revenue(req)
+            self.total_revenue += self.calculate_revenue(req)
             self.total_cost += self.calculate_cost(req, link_map)
             self.average_node_stress += self.calculate_ans(sub)
             self.average_link_stress += self.calculate_als(sub)
@@ -34,7 +34,8 @@ class Evaluation:
                                                  self.average_node_stress / self.total_arrived,
                                                  self.average_link_stress / self.total_arrived)})
 
-    def calcualte_revenue(self, req):
+    @staticmethod
+    def calculate_revenue(req):
         """"映射收益"""
         revenue = 0
         for vn in range(req.number_of_nodes()):
@@ -43,7 +44,8 @@ class Evaluation:
             revenue += req[vl[0]][vl[1]]['bw']
         return revenue
 
-    def calculate_cost(self, req, link_map):
+    @staticmethod
+    def calculate_cost(req, link_map):
         """映射成本"""
         cost = 0
         for vn in range(req.number_of_nodes()):
@@ -54,7 +56,18 @@ class Evaluation:
             cost += link_resource * (len(path) - 1)
         return cost
 
-    def calculate_ans(self, sub):
+    @staticmethod
+    def revenue_to_cost_ratio(req, link_map):
+
+        if len(link_map) == req.number_of_edges():
+            revenue = Evaluation.calculate_revenue(req)
+            cost = Evaluation.calculate_cost(req, link_map)
+            return revenue / cost
+        else:
+            return -1
+
+    @staticmethod
+    def calculate_ans(sub):
         """节点资源利用率"""
         node_stress = 0
         for i in range(sub.number_of_nodes()):
@@ -62,7 +75,8 @@ class Evaluation:
         node_stress /= sub.number_of_nodes()
         return node_stress
 
-    def calculate_als(self, sub):
+    @staticmethod
+    def calculate_als(sub):
         """链路资源利用率"""
         link_stress = 0
         for vl in sub.edges:

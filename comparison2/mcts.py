@@ -2,7 +2,7 @@ import sys
 import math
 import random
 import copy
-import networkx as nx
+from evaluation import Evaluation
 from network import Network
 
 LIMIT = -sys.maxsize
@@ -66,19 +66,8 @@ class State:
             node_map.update({i: self.chosen_ids[i]})
         link_map = Network.find_path(self.sub, self.vnr, node_map)
         if len(link_map) == self.vnr.number_of_edges():
-            requested, occupied = 0, 0
-
-            # node resource
-            for vn_id, sn_id in node_map.items():
-                node_resource = self.vnr.nodes[vn_id]['cpu']
-                occupied += node_resource
-                requested += node_resource
-
-            # link resource
-            for vl, path in link_map.items():
-                link_resource = self.vnr[vl[0]][vl[1]]['bw']
-                requested += link_resource
-                occupied += link_resource * (len(path) - 1)
+            requested = Evaluation.calculate_revenue(self.vnr)
+            occupied = Evaluation.calculate_cost(self.vnr, link_map)
             return 1000 + requested - occupied
         else:
             return LIMIT

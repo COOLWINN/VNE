@@ -1,4 +1,3 @@
-import os
 import copy
 import time
 from evaluation import Evaluation
@@ -12,7 +11,6 @@ from network import Network
 from event import Event
 from queue import PriorityQueue
 import tensorflow as tf
-from analysis import Analysis
 
 
 class Algorithm:
@@ -25,8 +23,7 @@ class Algorithm:
         self.granularity = granularity
         self.evaluation = Evaluation()
 
-    def execute(self, result_dir, network_path, sub_filename, req_num=1000, child_num=0):
-        tool = Analysis(result_dir)
+    def execute(self, network_path, sub_filename, req_num=1000, child_num=0):
         networks = Network(network_path)
         sub, requests, children = networks.get_networks(sub_filename, req_num, child_num, self.granularity)
         events = PriorityQueue()
@@ -36,10 +33,9 @@ class Algorithm:
         with tf.Session() as sess:
             self.configure(sub, sess)
             start = time.time()
-            self.handle(tool, sub, events)
+            self.handle(sub, events)
             runtime = time.time() - start
         tf.get_default_graph().finalize()
-        tool.save_evaluations(self.evaluation, '%s-VNE.txt' % self.name)
         return runtime
 
     def configure(self, sub, sess=None):
@@ -69,11 +65,6 @@ class Algorithm:
                                    learning_rate=0.02,
                                    reward_decay=0.95,
                                    episodes=self.node_arg)
-            # agent = Agent1(action_num=sub.number_of_nodes(),
-            #                feature_num=5,
-            #                learning_rate=0.02,
-            #                reward_decay=0.95,
-            #                episodes=self.node_arg)
 
         elif self.name == 'ML2':
             agent = Agent2(action_num=sub.number_of_nodes(),
@@ -98,7 +89,7 @@ class Algorithm:
                                    episodes=self.node_arg)
         self.agent = agent
 
-    def handle(self, tool, sub, events, requests=None):
+    def handle(self, sub, events, requests=None):
 
         child_algorithm = Algorithm('MCTS', link_method=1)
 
@@ -118,10 +109,10 @@ class Algorithm:
                         req_leave.graph['time'] = req.graph['time'] + req.graph['duration']
                         events.put(Event(req_leave))
 
-                    if ((req_id + 1) - 1000) % 200 == 0:
-                        filename1 = '%s-node-%s.txt' % (self.name, req_id)
-                        filename2 = '%s-link-%s.txt' % (self.name, req_id)
-                        tool.save_network_load(sub, filename1, filename2)
+                    # if ((req_id + 1) - 1000) % 200 == 0:
+                    #     filename1 = '%s-node-%s.txt' % (self.name, req_id)
+                    #     filename2 = '%s-link-%s.txt' % (self.name, req_id)
+                    #     tool.save_network_load(sub, filename1, filename2)
 
                 if req.graph['type'] == 1:
                     Network.recover(sub, req, self.granularity)

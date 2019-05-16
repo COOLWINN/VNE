@@ -171,7 +171,7 @@ class Analysis:
     def draw_epoch(self):
         """绘制时间变化趋势图"""
 
-        with open(self.result_dir + 'epoch_tmp.txt') as f:
+        with open(self.result_dir + 'epoch.txt') as f:
             lines = f.readlines()
         epoch, acc, runtime = [], [], []
         for line in lines:
@@ -194,12 +194,14 @@ class Analysis:
         plt.ylabel("runtime", fontsize=12)
         plt.show()
 
-    def draw_topology(self, graph, filename):
+    @staticmethod
+    def draw_topology(graph):
         """绘制网络拓扑图"""
 
         nx.draw(graph, with_labels=False, node_color='black', edge_color='gray', node_size=50)
-        plt.savefig(self.result_dir + filename + '.png')
-        plt.close()
+        # plt.savefig(self.result_dir + filename + '.png')
+        # plt.close()
+        plt.show()
 
     # def save_network_load(self, sub, filename1, filename2):
     #     """将一段时间内底层网络的性能指标输出到指定文件内"""

@@ -6,7 +6,7 @@ if __name__ == '__main__':
 
     tool = Analysis('results_algorithm/')
     name = 'ML'
-    algorithm = Algorithm(name, node_arg=60)
+    algorithm = Algorithm(name, param=60)
     runtime = algorithm.execute(network_path='networks/',
                                 sub_filename='sub-wm.txt',
                                 req_num=1000)

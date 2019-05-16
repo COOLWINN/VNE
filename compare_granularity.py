@@ -8,7 +8,7 @@ if __name__ == '__main__':
     for i in range(3):
         granularity = i + 1
         algorithm = Algorithm('ML%d' % granularity,
-                              node_arg=50,
+                              param=50,
                               granularity=granularity)
         algorithm.execute(network_path='networks/',
                           sub_filename='sub-wm.txt')

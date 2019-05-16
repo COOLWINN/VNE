@@ -14,10 +14,10 @@ import tensorflow as tf
 
 class Algorithm:
 
-    def __init__(self, name, node_arg=10, link_method=1, granularity=1):
+    def __init__(self, name, param=10, link_method=1, granularity=1):
         self.name = name
         self.agent = None
-        self.node_arg = node_arg
+        self.param = param
         self.link_method = link_method
         self.granularity = granularity
         self.evaluation = Evaluation()
@@ -57,7 +57,7 @@ class Algorithm:
                        n_actions=sub.number_of_nodes(),
                        n_features=4,
                        learning_rate=0.05,
-                       epoch_num=self.node_arg,
+                       epoch_num=self.param,
                        batch_size=100)
             agent.train(training_set)
 
@@ -67,21 +67,21 @@ class Algorithm:
                                    feature_num=7,
                                    learning_rate=0.02,
                                    reward_decay=0.95,
-                                   episodes=self.node_arg)
+                                   episodes=self.param)
 
         elif self.name == 'ML2':
             agent = Agent2(action_num=sub.number_of_nodes(),
                            feature_num=9,
                            learning_rate=0.02,
                            reward_decay=0.95,
-                           episodes=self.node_arg)
+                           episodes=self.param)
 
         elif self.name == 'ML3':
             agent = Agent3(action_num=sub.number_of_nodes(),
                            feature_num=11,
                            learning_rate=0.02,
                            reward_decay=0.95,
-                           episodes=self.node_arg)
+                           episodes=self.param)
 
         else:
             agent = PolicyGradient(sess=sess,
@@ -89,12 +89,12 @@ class Algorithm:
                                    feature_num=7,
                                    learning_rate=0.02,
                                    reward_decay=0.95,
-                                   episodes=self.node_arg)
+                                   episodes=self.param)
         self.agent = agent
 
     def handle(self, sub, events, requests=None):
 
-        child_algorithm = Algorithm('ML', node_arg=50)
+        child_algorithm = Algorithm('ML', param=50)
 
         while not events.empty():
 
